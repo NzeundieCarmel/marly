@@ -1,0 +1,22 @@
+name: marly
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: marly
+      POSTGRES_PASSWORD: ${MARLY_DB_PASSWORD:?Definir MARLY_DB_PASSWORD dans le fichier .env}
+      POSTGRES_DB: marly_dev
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - marly-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marly -d marly_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  marly-postgres:
