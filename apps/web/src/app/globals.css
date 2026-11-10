@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-marly-bleu: #10294A;
+  --color-marly-vert: #2BB673;
+  --color-marly-texte: #1A2230;
+  --color-marly-gris: #4E5867;
+  --color-marly-bord: #E3E7EE;
+  --color-marly-fond: #F5F7FA;
+}
+
+body {
+  background: var(--color-marly-fond);
+  color: var(--color-marly-texte);
+}
