@@ -18,6 +18,15 @@ export interface ReponseConnexion {
   utilisateur: { id: string; nom: string; role: RoleMarly };
 }
 
+export interface ProfilUtilisateur {
+  id: string;
+  nom: string;
+  email: string | null;
+  role: RoleMarly;
+  cabinet: string;
+  dossier: { id: string; raisonSociale: string } | null;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -53,6 +62,29 @@ export class AuthService {
         nom: utilisateur.nom,
         role: utilisateur.role,
       },
+    };
+  }
+
+  async profil(id: string): Promise<ProfilUtilisateur> {
+    const utilisateur = await this.prisma.utilisateur.findUnique({
+      where: { id },
+      include: {
+        cabinet: { select: { nom: true } },
+        dossier: { select: { id: true, raisonSociale: true } },
+      },
+    });
+
+    if (!utilisateur) {
+      throw new UnauthorizedException('Compte introuvable');
+    }
+
+    return {
+      id: utilisateur.id,
+      nom: utilisateur.nom,
+      email: utilisateur.email,
+      role: utilisateur.role,
+      cabinet: utilisateur.cabinet.nom,
+      dossier: utilisateur.dossier,
     };
   }
 }

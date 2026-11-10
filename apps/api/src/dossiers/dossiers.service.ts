@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Piece, StatutPiece } from '@prisma/client';
+import { Piece, Prisma, StatutPiece } from '@prisma/client';
+import type { ChargeJeton } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ResumeDossier {
@@ -15,8 +16,20 @@ export interface ResumeDossier {
 export class DossiersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async lister(): Promise<ResumeDossier[]> {
+  // Dossiers autorisés : ceux du cabinet, et pour une PME uniquement le sien
+  private filtreAcces(utilisateur: ChargeJeton): Prisma.DossierWhereInput {
+    if (utilisateur.role === 'PME') {
+      return {
+        cabinetId: utilisateur.cabinetId,
+        id: utilisateur.dossierId ?? 'aucun-dossier',
+      };
+    }
+    return { cabinetId: utilisateur.cabinetId };
+  }
+
+  async lister(utilisateur: ChargeJeton): Promise<ResumeDossier[]> {
     const dossiers = await this.prisma.dossier.findMany({
+      where: this.filtreAcces(utilisateur),
       orderBy: { raisonSociale: 'asc' },
       include: { pieces: { select: { statut: true } } },
     });
@@ -32,11 +45,13 @@ export class DossiersService {
     }));
   }
 
-  async pieces(dossierId: string): Promise<Piece[]> {
-    const dossier = await this.prisma.dossier.findUnique({
-      where: { id: dossierId },
+  async pieces(dossierId: string, utilisateur: ChargeJeton): Promise<Piece[]> {
+    const dossier = await this.prisma.dossier.findFirst({
+      where: { ...this.filtreAcces(utilisateur), id: dossierId },
       select: { id: true },
     });
+
+    // 404 et non 403 : on ne confirme pas l'existence d'un dossier interdit
     if (!dossier) {
       throw new NotFoundException('Dossier introuvable');
     }
