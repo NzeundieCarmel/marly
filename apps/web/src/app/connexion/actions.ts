@@ -35,7 +35,10 @@ export async function seConnecter(
     return { erreur: "Une erreur est survenue. Réessaie." };
   }
 
-  const { jeton } = (await reponse.json()) as { jeton: string };
+  const { jeton, utilisateur } = (await reponse.json()) as {
+    jeton: string;
+    utilisateur: { role: string };
+  };
 
   (await cookies()).set(COOKIE_SESSION, jeton, {
     httpOnly: true,
@@ -45,7 +48,8 @@ export async function seConnecter(
     maxAge: 60 * 60 * 8,
   });
 
-  redirect("/dossiers");
+  // Une PME arrive sur l'envoi de pièces, le cabinet sur ses dossiers
+  redirect(utilisateur.role === "PME" ? "/envoyer" : "/dossiers");
 }
 
 export async function seDeconnecter(): Promise<void> {

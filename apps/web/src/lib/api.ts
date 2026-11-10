@@ -3,6 +3,7 @@ import { lireJeton } from "./session";
 
 export type Regime = "REEL" | "IGS";
 export type RoleMarly = "RESPONSABLE" | "COMPTABLE" | "PME" | "ADMIN";
+export type StatutPiece = "EN_ATTENTE" | "RECUE" | "A_COMPLETER" | "TRAITEE";
 
 export interface ResumeDossier {
   id: string;
@@ -20,6 +21,15 @@ export interface Profil {
   role: RoleMarly;
   cabinet: string;
   dossier: { id: string; raisonSociale: string } | null;
+}
+
+export interface Piece {
+  id: string;
+  date: string;
+  montantTtc: number;
+  fournisseur: string | null;
+  categorie: string;
+  statut: StatutPiece;
 }
 
 export const API_URL = process.env.API_URL ?? "http://127.0.0.1:4001/api/v1";
@@ -51,4 +61,8 @@ export function listerDossiers(): Promise<ResumeDossier[]> {
 
 export function lireProfil(): Promise<Profil> {
   return appelerApi<Profil>("/auth/moi");
+}
+
+export function listerPieces(dossierId: string): Promise<Piece[]> {
+  return appelerApi<Piece[]>(`/dossiers/${encodeURIComponent(dossierId)}/pieces`);
 }
