@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { listerDossiers, type ResumeDossier } from "@/lib/api";
+import { lireProfil, listerDossiers, type ResumeDossier } from "@/lib/api";
+import { seDeconnecter } from "../connexion/actions";
 
 function Carte({ titre, valeur }: { titre: string; valeur: number }) {
   return (
@@ -41,14 +42,29 @@ function Chargement() {
   );
 }
 
-// Seul ce composant attend l'API : il est isolé dans <Suspense> plus bas
-async function TableauDossiers() {
-  const dossiers = await listerDossiers();
+// Tout ce qui dépend de l'utilisateur connecté est isolé dans <Suspense>
+async function ContenuDossiers() {
+  const [profil, dossiers] = await Promise.all([lireProfil(), listerDossiers()]);
   const totalAValider = dossiers.reduce((somme, d) => somme + d.aValider, 0);
   const totalACompleter = dossiers.reduce((somme, d) => somme + d.aCompleter, 0);
 
   return (
     <>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-marly-gris">{profil.cabinet}</span>
+          <h1 className="text-3xl font-bold text-marly-bleu">Bonjour, {profil.nom}</h1>
+        </div>
+        <form action={seDeconnecter}>
+          <button
+            type="submit"
+            className="h-11 rounded-xl border border-marly-bord bg-white px-4 font-medium text-marly-texte"
+          >
+            Se déconnecter
+          </button>
+        </form>
+      </header>
+
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Carte titre="Dossiers" valeur={dossiers.length} />
         <Carte titre="Pièces à valider" valeur={totalAValider} />
@@ -90,16 +106,14 @@ async function TableauDossiers() {
 export default function PageDossiers() {
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-marly-bleu">Dossiers du cabinet</h1>
-        <Link href="/" className="text-sm text-marly-gris underline">
+      <Suspense fallback={<Chargement />}>
+        <ContenuDossiers />
+      </Suspense>
+      <p className="mt-6 text-sm">
+        <Link href="/" className="text-marly-gris underline">
           Accueil
         </Link>
-      </header>
-
-      <Suspense fallback={<Chargement />}>
-        <TableauDossiers />
-      </Suspense>
+      </p>
     </main>
   );
 }
