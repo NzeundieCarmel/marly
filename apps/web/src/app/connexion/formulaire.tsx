@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { seConnecter, type EtatConnexion } from "./actions";
 
@@ -9,6 +9,13 @@ const etatInitial: EtatConnexion = { erreur: null };
 export function FormulaireConnexion() {
   const [etat, action, enCours] = useActionState(seConnecter, etatInitial);
   const sessionExpiree = useSearchParams().get("expiree") === "1";
+
+  // Déconnexion ou session expirée : on efface les pages gardées pour le hors ligne
+  useEffect(() => {
+    if ("caches" in window) {
+      void caches.delete("marly-pages-v1");
+    }
+  }, []);
 
   return (
     <form action={action} className="flex flex-col gap-4">

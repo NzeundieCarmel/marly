@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10294A">
+  <title>Marly · Pas de connexion</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           font-family: system-ui, sans-serif; background: #F5F7FA; color: #1A2230; padding: 24px; box-sizing: border-box; }
+    .carte { max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+    h1 { margin: 0; font-size: 24px; color: #10294A; }
+    p { margin: 0; color: #4E5867; line-height: 1.5; }
+    button { height: 48px; padding: 0 24px; border: none; border-radius: 12px; background: #10294A;
+             color: #fff; font-size: 16px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="carte">
+    <img src="/icone-192.png" width="72" height="72" alt="">
+    <h1>Pas de connexion</h1>
+    <p>Marly n'arrive pas à joindre le serveur. Vérifie ton réseau, puis réessaie.</p>
+    <button type="button" onclick="location.reload()">Réessayer</button>
+  </div>
+</body>
+</html>
