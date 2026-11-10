@@ -46,8 +46,10 @@ export class DossiersService {
   }
 
   async pieces(dossierId: string, utilisateur: ChargeJeton): Promise<Piece[]> {
+    // AND : le dossier doit respecter le filtre d'accès ET avoir cet identifiant.
+    // Ne jamais fusionner les objets avec "..." : un champ en double s'écraserait.
     const dossier = await this.prisma.dossier.findFirst({
-      where: { ...this.filtreAcces(utilisateur), id: dossierId },
+      where: { AND: [this.filtreAcces(utilisateur), { id: dossierId }] },
       select: { id: true },
     });
 

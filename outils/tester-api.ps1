@@ -28,6 +28,8 @@ $entetePaul = @{ Authorization = "Bearer $(Get-JetonMarly 'essomba@exemple.cm')"
 
 $dossiersMarc = Invoke-RestMethod -Uri "$api/dossiers" -Headers $enteteMarc
 $autre = $dossiersMarc | Where-Object { $_.raisonSociale -eq "Agence Wouri Services" }
+$dossiersPaul = Invoke-RestMethod -Uri "$api/dossiers" -Headers $entetePaul
+$sienPaul = $dossiersPaul | Where-Object { $_.raisonSociale -eq "Quincaillerie Essomba" }
 
 $resultats = @(
     Test-Marly "Sante publique" { (Invoke-RestMethod "$api/sante").api } "ok"
@@ -40,7 +42,9 @@ $resultats = @(
     Test-Marly "Marc voit 5 dossiers" { $dossiersMarc.Count } 5
     Test-Marly "Dossier Agence trouve" { [bool]$autre } $true
     Test-Marly "Marc lit les pieces de l'Agence" { $p = Invoke-RestMethod "$api/dossiers/$($autre.id)/pieces" -Headers $enteteMarc; $p.Count } 3
-    Test-Marly "Paul voit 1 dossier" { $d = Invoke-RestMethod "$api/dossiers" -Headers $entetePaul; $d.Count } 1
+    Test-Marly "Paul voit 1 dossier" { $dossiersPaul.Count } 1
+    Test-Marly "Dossier de Paul trouve" { [bool]$sienPaul } $true
+    Test-Marly "Paul lit ses propres pieces" { $p = Invoke-RestMethod "$api/dossiers/$($sienPaul.id)/pieces" -Headers $entetePaul; $p.Count } 4
     Test-Marly "Paul bloque sur l'Agence" { Invoke-RestMethod "$api/dossiers/$($autre.id)/pieces" -Headers $entetePaul | Out-Null; 200 } 404
 )
 
