@@ -27,6 +27,24 @@ export class DossiersService {
     return { cabinetId: utilisateur.cabinetId };
   }
 
+  // Lève une erreur 404 si l'utilisateur n'a pas accès à ce dossier
+  async verifierAcces(
+    dossierId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<void> {
+    // AND : le dossier doit respecter le filtre d'accès ET avoir cet identifiant.
+    // Ne jamais fusionner les objets avec "..." : un champ en double s'écraserait.
+    const dossier = await this.prisma.dossier.findFirst({
+      where: { AND: [this.filtreAcces(utilisateur), { id: dossierId }] },
+      select: { id: true },
+    });
+
+    // 404 et non 403 : on ne confirme pas l'existence d'un dossier interdit
+    if (!dossier) {
+      throw new NotFoundException('Dossier introuvable');
+    }
+  }
+
   async lister(utilisateur: ChargeJeton): Promise<ResumeDossier[]> {
     const dossiers = await this.prisma.dossier.findMany({
       where: this.filtreAcces(utilisateur),
@@ -46,17 +64,7 @@ export class DossiersService {
   }
 
   async pieces(dossierId: string, utilisateur: ChargeJeton): Promise<Piece[]> {
-    // AND : le dossier doit respecter le filtre d'accès ET avoir cet identifiant.
-    // Ne jamais fusionner les objets avec "..." : un champ en double s'écraserait.
-    const dossier = await this.prisma.dossier.findFirst({
-      where: { AND: [this.filtreAcces(utilisateur), { id: dossierId }] },
-      select: { id: true },
-    });
-
-    // 404 et non 403 : on ne confirme pas l'existence d'un dossier interdit
-    if (!dossier) {
-      throw new NotFoundException('Dossier introuvable');
-    }
+    await this.verifierAcces(dossierId, utilisateur);
 
     return this.prisma.piece.findMany({
       where: { dossierId },
