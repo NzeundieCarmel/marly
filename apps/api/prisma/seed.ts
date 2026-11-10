@@ -1,6 +1,10 @@
 import { PrismaClient, Regime, Role, StatutPiece } from '@prisma/client';
+import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Mot de passe commun aux comptes de démonstration uniquement
+const MOT_DE_PASSE_DEMO = 'Marly2026!';
 
 const dossiers = [
   { raisonSociale: 'Quincaillerie Essomba', regime: Regime.REEL },
@@ -18,31 +22,23 @@ const pieces = [
 ];
 
 async function main(): Promise<void> {
-  // On vide la base pour pouvoir relancer le script autant de fois qu'on veut
   await prisma.piece.deleteMany();
   await prisma.utilisateur.deleteMany();
   await prisma.dossier.deleteMany();
   await prisma.cabinet.deleteMany();
 
+  const motDePasseHache = await hash(MOT_DE_PASSE_DEMO, 10);
+
   const cabinet = await prisma.cabinet.create({
     data: { nom: 'Cabinet Ngando & Associés' },
   });
 
-  await prisma.utilisateur.create({
-    data: {
-      nom: 'Marc T.',
-      email: 'marc@exemple.cm',
-      motDePasseHache: 'a-definir',
-      role: Role.RESPONSABLE,
-      cabinetId: cabinet.id,
-    },
-  });
-
+  const idsDossiers: string[] = [];
   for (const [i, d] of dossiers.entries()) {
     const dossier = await prisma.dossier.create({
       data: { ...d, cabinetId: cabinet.id },
     });
-    // Un nombre de pièces différent par dossier, pour un tableau de bord réaliste
+    idsDossiers.push(dossier.id);
     const sesPieces = pieces.slice(0, 4 - (i % 3));
     await prisma.piece.createMany({
       data: sesPieces.map((p) => ({
@@ -53,7 +49,34 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log('Donnees de demo creees.');
+  await prisma.utilisateur.createMany({
+    data: [
+      {
+        nom: 'Marc T.',
+        email: 'marc@exemple.cm',
+        motDePasseHache,
+        role: Role.RESPONSABLE,
+        cabinetId: cabinet.id,
+      },
+      {
+        nom: 'Awa M.',
+        email: 'awa@exemple.cm',
+        motDePasseHache,
+        role: Role.COMPTABLE,
+        cabinetId: cabinet.id,
+      },
+      {
+        nom: 'Paul Essomba',
+        email: 'essomba@exemple.cm',
+        motDePasseHache,
+        role: Role.PME,
+        cabinetId: cabinet.id,
+        dossierId: idsDossiers[0],
+      },
+    ],
+  });
+
+  console.log('Donnees de demo creees : 3 comptes, 5 dossiers, 16 pieces.');
 }
 
 main()
