@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Accueil() {
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
@@ -16,7 +18,12 @@ export default function Accueil() {
         </svg>
         <h1 className="text-4xl font-bold text-marly-bleu">Marly</h1>
         <p className="text-lg text-marly-gris">Comptabilité connectée</p>
-        <p className="text-sm text-marly-gris">Interface prête · port 3001</p>
+        <Link
+          href="/dossiers"
+          className="mt-2 flex h-12 items-center rounded-xl bg-marly-bleu px-6 font-bold text-white"
+        >
+          Voir les dossiers du cabinet
+        </Link>
       </div>
     </main>
   );
