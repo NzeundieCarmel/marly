@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  mettreEnAttente,
+  synchroniser,
+  type ResultatSynchro,
+} from "@/lib/file-attente";
 
 const CATEGORIES = [
   "Électricité, eau",
@@ -12,6 +17,8 @@ const CATEGORIES = [
   "Autre",
 ];
 
+const INTERVALLE_SYNCHRO_MS = 30_000;
+
 type Message = { type: "succes" | "erreur"; texte: string } | null;
 
 function aujourdhui(): string {
@@ -19,10 +26,13 @@ function aujourdhui(): string {
   return new Date().toLocaleDateString("fr-CA");
 }
 
+function pluriel(nombre: number, mot: string): string {
+  return `${nombre} ${mot}${nombre > 1 ? "s" : ""}`;
+}
+
 function messageErreur(statut: number, corps: unknown): string {
   if (statut === 409) return "Cette pièce a déjà été envoyée.";
   if (statut === 413) return "Fichier trop lourd : 10 Mo maximum.";
-  if (statut === 503) return "Le serveur Marly est injoignable. Réessaie plus tard.";
   const message = (corps as { message?: string | string[] } | null)?.message;
   if (Array.isArray(message)) return message[0] ?? "Vérifie les informations saisies.";
   return message ?? "L'envoi a échoué. Réessaie.";
@@ -38,6 +48,51 @@ export function FormulaireEnvoi({ dossierId }: { dossierId: string }) {
   const [categorie, setCategorie] = useState(CATEGORIES[0]);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [message, setMessage] = useState<Message>(null);
+  const [enAttente, setEnAttente] = useState(0);
+
+  // Affiche le résultat d'une synchronisation de la file d'attente
+  const appliquerResultat = useCallback(
+    (resultat: ResultatSynchro) => {
+      setEnAttente(resultat.restantes);
+      if (resultat.sessionExpiree) {
+        router.push("/connexion?expiree=1");
+        return;
+      }
+      if (resultat.refusees > 0) {
+        setMessage({
+          type: "erreur",
+          texte: `${pluriel(resultat.refusees, "pièce")} en attente refusée${resultat.refusees > 1 ? "s" : ""} par le serveur (format, taille ou montant). Renvoie-la avec une nouvelle photo.`,
+        });
+      } else if (resultat.envoyees > 0) {
+        setMessage({
+          type: "succes",
+          texte: `${pluriel(resultat.envoyees, "pièce")} en attente envoyée${resultat.envoyees > 1 ? "s" : ""} au cabinet.`,
+        });
+      }
+      if (resultat.envoyees > 0) router.refresh();
+    },
+    [router],
+  );
+
+  // Synchronise à l'ouverture, au retour du réseau, puis toutes les 30 secondes
+  useEffect(() => {
+    let actif = true;
+    const lancer = () => {
+      void synchroniser().then((resultat) => {
+        if (actif) appliquerResultat(resultat);
+      });
+    };
+
+    lancer();
+    window.addEventListener("online", lancer);
+    const minuteur = window.setInterval(lancer, INTERVALLE_SYNCHRO_MS);
+
+    return () => {
+      actif = false;
+      window.removeEventListener("online", lancer);
+      window.clearInterval(minuteur);
+    };
+  }, [appliquerResultat]);
 
   // Libère l'aperçu de la photo quand on quitte l'écran
   useEffect(() => {
@@ -45,6 +100,15 @@ export function FormulaireEnvoi({ dossierId }: { dossierId: string }) {
       if (urlApercu.current) URL.revokeObjectURL(urlApercu.current);
     };
   }, []);
+
+  function reinitialiser() {
+    formulaire.current?.reset();
+    if (urlApercu.current) URL.revokeObjectURL(urlApercu.current);
+    urlApercu.current = null;
+    setApercu(null);
+    setNomFichier(null);
+    setCategorie(CATEGORIES[0]);
+  }
 
   function choisirFichier(evenement: React.ChangeEvent<HTMLInputElement>) {
     const fichier = evenement.target.files?.[0];
@@ -76,8 +140,29 @@ export function FormulaireEnvoi({ dossierId }: { dossierId: string }) {
     donnees.set("categorie", categorie);
 
     try {
-      const reponse = await fetch("/api/pieces", { method: "POST", body: donnees });
+      // 1. Tentative d'envoi direct, si le téléphone pense avoir du réseau
+      let reponse: Response | null = null;
+      if (navigator.onLine) {
+        try {
+          reponse = await fetch("/api/pieces", { method: "POST", body: donnees });
+        } catch {
+          reponse = null;
+        }
+      }
 
+      // 2. Pas de réseau, ou serveur indisponible : on garde la pièce sur le téléphone
+      if (!reponse || reponse.status === 503) {
+        await mettreEnAttente(donnees);
+        setEnAttente((nombre) => nombre + 1);
+        setMessage({
+          type: "succes",
+          texte: "Pas de réseau : pièce gardée sur le téléphone. Elle partira automatiquement.",
+        });
+        reinitialiser();
+        return;
+      }
+
+      // 3. Réponse du serveur
       if (reponse.status === 401) {
         router.push("/connexion?expiree=1");
         return;
@@ -90,25 +175,43 @@ export function FormulaireEnvoi({ dossierId }: { dossierId: string }) {
       }
 
       setMessage({ type: "succes", texte: "Pièce envoyée au cabinet." });
-      formulaire.current?.reset();
-      if (urlApercu.current) URL.revokeObjectURL(urlApercu.current);
-      urlApercu.current = null;
-      setApercu(null);
-      setNomFichier(null);
-      setCategorie(CATEGORIES[0]);
+      reinitialiser();
       router.refresh();
     } catch {
       setMessage({
         type: "erreur",
-        texte: "Pas de connexion. Réessaie quand le réseau revient.",
+        texte: "Impossible d'enregistrer la pièce sur le téléphone. Réessaie.",
       });
     } finally {
       setEnvoiEnCours(false);
     }
   }
 
+  function envoyerMaintenant() {
+    void synchroniser().then(appliquerResultat);
+  }
+
   return (
     <form ref={formulaire} onSubmit={envoyer} className="flex flex-col gap-4">
+      {enAttente > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#FFF2DB] p-3 text-sm text-[#7A4A00]"
+        >
+          <span>
+            <strong>{pluriel(enAttente, "pièce")} en attente d&apos;envoi.</strong>{" "}
+            {enAttente > 1 ? "Elles partiront" : "Elle partira"} automatiquement au retour du réseau.
+          </span>
+          <button
+            type="button"
+            onClick={envoyerMaintenant}
+            className="h-10 rounded-lg bg-[#7A4A00] px-3 font-bold text-white"
+          >
+            Envoyer maintenant
+          </button>
+        </div>
+      )}
+
       {message && (
         <p
           role={message.type === "erreur" ? "alert" : "status"}
