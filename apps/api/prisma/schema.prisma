@@ -46,6 +46,7 @@ model Utilisateur {
   cabinetId       String
   dossier         Dossier? @relation(fields: [dossierId], references: [id])
   dossierId       String?
+  piecesValidees  Piece[]  @relation("PiecesValidees")
   creeLe          DateTime @default(now())
 }
 
@@ -64,17 +65,36 @@ model Dossier {
 }
 
 model Piece {
-  id          String      @id @default(cuid())
-  dossier     Dossier     @relation(fields: [dossierId], references: [id])
+  id          String          @id @default(cuid())
+  dossier     Dossier         @relation(fields: [dossierId], references: [id])
   dossierId   String
   date        DateTime
   montantTtc  Int
   fournisseur String?
   categorie   String
-  statut      StatutPiece @default(RECUE)
+  statut      StatutPiece     @default(RECUE)
   fichier     String?
   empreinte   String?
-  creeLe      DateTime    @default(now())
+  journal     String?
+  valideLe    DateTime?
+  validePar   Utilisateur?    @relation("PiecesValidees", fields: [valideParId], references: [id])
+  valideParId String?
+  lignes      LigneEcriture[]
+  creeLe      DateTime        @default(now())
 
   @@index([dossierId, date])
+}
+
+model LigneEcriture {
+  id      String  @id @default(cuid())
+  piece   Piece   @relation(fields: [pieceId], references: [id], onDelete: Cascade)
+  pieceId String
+  ordre   Int
+  compte  String
+  libelle String
+  tiers   String?
+  debit   Int     @default(0)
+  credit  Int     @default(0)
+
+  @@index([pieceId])
 }
