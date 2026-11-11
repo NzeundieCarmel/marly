@@ -86,7 +86,11 @@ async function ContenuDossiers() {
           <tbody>
             {dossiers.map((d) => (
               <tr key={d.id} className="border-t border-marly-bord">
-                <td className="px-5 py-4 font-bold">{d.raisonSociale}</td>
+                <td className="px-5 py-4 font-bold">
+                  <Link href={`/dossiers/${d.id}`} className="text-marly-bleu underline">
+                    {d.raisonSociale}
+                  </Link>
+                </td>
                 <td className="px-3 py-4">{d.regime === "REEL" ? "Réel" : "IGS"}</td>
                 <td className="px-3 py-4 text-right">{d.piecesRecues}</td>
                 <td className="px-3 py-4 text-right">{d.aValider}</td>
