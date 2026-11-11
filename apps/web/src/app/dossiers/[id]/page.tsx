@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
-import { listerDossiers, listerPieces, type StatutPiece } from "@/lib/api";
+import {
+  lireProfil,
+  listerDemandes,
+  listerDossiers,
+  listerPieces,
+  type StatutPiece,
+} from "@/lib/api";
+import { prochaineEcheance, versIsoJour } from "@/lib/echeances";
+import { DemandesDossier } from "./demandes-dossier";
 
 const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
   EN_ATTENTE: { texte: "En attente", classes: "bg-[#EEF1F5] text-marly-gris" },
@@ -15,12 +24,22 @@ const formatMontant = new Intl.NumberFormat("fr-FR");
 
 async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [dossiers, pieces] = await Promise.all([listerDossiers(), listerPieces(id)]);
+  const [profil, dossiers, pieces, demandes] = await Promise.all([
+    lireProfil(),
+    listerDossiers(),
+    listerPieces(id),
+    listerDemandes(id),
+  ]);
   const dossier = dossiers.find((d) => d.id === id);
   if (!dossier) {
     notFound();
   }
   const premiereAValider = pieces.find((p) => p.statut === "RECUE");
+  const peutGerer = profil.role === "RESPONSABLE" || profil.role === "COMPTABLE";
+  
+  // La date du jour est lue à chaque visite, jamais figée à l'avance
+  await connection();
+  const echeanceParDefaut = versIsoJour(prochaineEcheance(new Date()));
 
   return (
     <>
@@ -36,7 +55,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
             {dossier.aValider} à valider
           </span>
         </div>
-        {premiereAValider && (
+        {premiereAValider && peutGerer && (
           <Link
             href={`/pieces/${premiereAValider.id}`}
             className="flex h-11 items-center rounded-xl bg-marly-bleu px-5 font-bold text-white"
@@ -45,6 +64,13 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
           </Link>
         )}
       </header>
+
+      <DemandesDossier
+        dossierId={dossier.id}
+        demandes={demandes}
+        echeanceParDefaut={echeanceParDefaut}
+        peutGerer={peutGerer}
+      />
 
       <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
         <table className="w-full min-w-[640px] border-collapse text-left">
@@ -71,9 +97,11 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
                   </span>
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <Link href={`/pieces/${p.id}`} className="font-bold text-marly-bleu underline">
-                    {p.statut === "RECUE" ? "Valider" : "Voir"}
-                  </Link>
+                  {peutGerer && (
+                    <Link href={`/pieces/${p.id}`} className="font-bold text-marly-bleu underline">
+                      {p.statut === "RECUE" ? "Valider" : "Voir"}
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}

@@ -6,6 +6,7 @@ const NOM_TABLE = "pieces";
 export interface PieceEnAttente {
   id: string;
   dossierId: string;
+  demandeId?: string | null;
   date: string;
   montantTtc: string;
   fournisseur: string;
@@ -60,15 +61,21 @@ function retirerEnAttente(id: string): Promise<undefined> {
   return executer("readwrite", (table) => table.delete(id));
 }
 
+function enregistrer(piece: PieceEnAttente): Promise<IDBValidKey> {
+  return executer("readwrite", (table) => table.put(piece));
+}
+
 // Garde sur le téléphone une pièce qui n'a pas pu partir
 export async function mettreEnAttente(donnees: FormData): Promise<void> {
   const fichier = donnees.get("fichier");
   if (!(fichier instanceof File) || fichier.size === 0) {
     throw new Error("Fichier manquant");
   }
-  const piece: PieceEnAttente = {
+  const demandeId = donnees.get("demandeId");
+  await enregistrer({
     id: crypto.randomUUID(),
     dossierId: String(donnees.get("dossierId") ?? ""),
+    demandeId: typeof demandeId === "string" && demandeId ? demandeId : null,
     date: String(donnees.get("date") ?? ""),
     montantTtc: String(donnees.get("montantTtc") ?? ""),
     fournisseur: String(donnees.get("fournisseur") ?? ""),
@@ -76,19 +83,25 @@ export async function mettreEnAttente(donnees: FormData): Promise<void> {
     fichier,
     nomFichier: fichier.name,
     creeLe: Date.now(),
-  };
-  await executer("readwrite", (table) => table.put(piece));
+  });
 }
 
 function versFormData(piece: PieceEnAttente): FormData {
   const donnees = new FormData();
   donnees.set("dossierId", piece.dossierId);
+  if (piece.demandeId) donnees.set("demandeId", piece.demandeId);
   donnees.set("date", piece.date);
   donnees.set("montantTtc", piece.montantTtc);
   if (piece.fournisseur) donnees.set("fournisseur", piece.fournisseur);
   donnees.set("categorie", piece.categorie);
   donnees.set("fichier", piece.fichier, piece.nomFichier);
   return donnees;
+}
+
+async function envoyerUne(piece: PieceEnAttente): Promise<{ statut: number; message: string }> {
+  const reponse = await fetch("/api/pieces", { method: "POST", body: versFormData(piece) });
+  const corps = (await reponse.json().catch(() => null)) as { message?: unknown } | null;
+  return { statut: reponse.status, message: String(corps?.message ?? "") };
 }
 
 let synchroEnCours = false;
@@ -112,17 +125,20 @@ export async function synchroniser(): Promise<ResultatSynchro> {
     const pieces = (await listerEnAttente()).sort((a, b) => a.creeLe - b.creeLe);
 
     for (const piece of pieces) {
-      let statut: number;
+      let envoi: { statut: number; message: string };
       try {
-        const reponse = await fetch("/api/pieces", {
-          method: "POST",
-          body: versFormData(piece),
-        });
-        statut = reponse.status;
+        envoi = await envoyerUne(piece);
+        // La demande a été close entre-temps : on envoie quand même la pièce, sans lien
+        if (envoi.statut === 409 && piece.demandeId && /demande/i.test(envoi.message)) {
+          piece.demandeId = null;
+          await enregistrer(piece);
+          envoi = await envoyerUne(piece);
+        }
       } catch {
         break; // Toujours pas de réseau : on réessaiera plus tard
       }
 
+      const { statut } = envoi;
       if (statut === 401) {
         resultat.sessionExpiree = true;
         break;

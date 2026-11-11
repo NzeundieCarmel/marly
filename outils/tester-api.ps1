@@ -1,7 +1,9 @@
 # Tests automatiques de l'API Marly
 # Lancement : powershell -ExecutionPolicy Bypass -File .\outils\tester-api.ps1
 # Attention : le script remet les donnees de demonstration a zero (au debut et a la fin).
-
+# PowerShell 5.1 : une connexion neuve a chaque appel (evite "connexion sous-jacente fermee")
+$PSDefaultParameterValues['Invoke-RestMethod:DisableKeepAlive'] = $true
+$PSDefaultParameterValues['Invoke-WebRequest:DisableKeepAlive'] = $true
 $api = "http://127.0.0.1:4001/api/v1"
 $racine = Split-Path -Parent $PSScriptRoot
 

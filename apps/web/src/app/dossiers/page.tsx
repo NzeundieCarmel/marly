@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { lireProfil, listerDossiers, type ResumeDossier } from "@/lib/api";
+import { formatJourMois, joursAvant, prochaineEcheance } from "@/lib/echeances";
 import { seDeconnecter } from "../connexion/actions";
 
 function Carte({ titre, valeur }: { titre: string; valeur: number }) {
@@ -12,8 +14,12 @@ function Carte({ titre, valeur }: { titre: string; valeur: number }) {
   );
 }
 
+function aRelancer(dossier: ResumeDossier): boolean {
+  return dossier.aCompleter > 0 || dossier.demandesOuvertes > 0;
+}
+
 function Statut({ dossier }: { dossier: ResumeDossier }) {
-  if (dossier.aCompleter > 0) {
+  if (aRelancer(dossier)) {
     return (
       <span className="rounded-full bg-[#FFF2DB] px-3 py-1 text-sm font-medium text-[#7A4A00]">
         À relancer
@@ -46,7 +52,14 @@ function Chargement() {
 async function ContenuDossiers() {
   const [profil, dossiers] = await Promise.all([lireProfil(), listerDossiers()]);
   const totalAValider = dossiers.reduce((somme, d) => somme + d.aValider, 0);
-  const totalACompleter = dossiers.reduce((somme, d) => somme + d.aCompleter, 0);
+  const totalDemandes = dossiers.reduce((somme, d) => somme + d.demandesOuvertes, 0);
+  const dossiersARelancer = dossiers.filter(aRelancer).length;
+
+  await connection();
+  const maintenant = new Date();
+  const echeance = prochaineEcheance(maintenant);
+  const jours = joursAvant(echeance, maintenant);
+  const urgent = jours <= 3;
 
   return (
     <>
@@ -65,21 +78,36 @@ async function ContenuDossiers() {
         </form>
       </header>
 
+      <div
+        role="status"
+        className={`mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl p-4 ${
+          urgent ? "bg-[#FDECEC] text-[#A12A2A]" : "bg-[#FFF2DB] text-[#6E4300]"
+        }`}
+      >
+        <strong className="text-2xl">J-{jours}</strong>
+        <span>
+          avant l&apos;échéance du <strong>{formatJourMois(echeance)}</strong>.{" "}
+          {dossiersARelancer > 0
+            ? `${dossiersARelancer} dossier${dossiersARelancer > 1 ? "s" : ""} attend${dossiersARelancer > 1 ? "ent" : ""} encore des pièces.`
+            : "Tous les dossiers sont complets."}
+        </span>
+      </div>
+
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Carte titre="Dossiers" valeur={dossiers.length} />
         <Carte titre="Pièces à valider" valeur={totalAValider} />
-        <Carte titre="Pièces à compléter" valeur={totalACompleter} />
+        <Carte titre="Pièces demandées" valeur={totalDemandes} />
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
-        <table className="w-full min-w-[640px] border-collapse text-left">
+        <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
             <tr className="text-sm text-marly-gris">
               <th className="px-5 py-3 font-medium">Dossier</th>
               <th className="px-3 py-3 font-medium">Régime</th>
               <th className="px-3 py-3 text-right font-medium">Reçues</th>
               <th className="px-3 py-3 text-right font-medium">À valider</th>
-              <th className="px-3 py-3 text-right font-medium">À compléter</th>
+              <th className="px-3 py-3 text-right font-medium">Demandées</th>
               <th className="px-5 py-3 font-medium">Statut</th>
             </tr>
           </thead>
@@ -94,7 +122,7 @@ async function ContenuDossiers() {
                 <td className="px-3 py-4">{d.regime === "REEL" ? "Réel" : "IGS"}</td>
                 <td className="px-3 py-4 text-right">{d.piecesRecues}</td>
                 <td className="px-3 py-4 text-right">{d.aValider}</td>
-                <td className="px-3 py-4 text-right">{d.aCompleter}</td>
+                <td className="px-3 py-4 text-right">{d.demandesOuvertes}</td>
                 <td className="px-5 py-4">
                   <Statut dossier={d} />
                 </td>

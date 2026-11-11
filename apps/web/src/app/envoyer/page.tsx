@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { lireProfil, listerPieces, type StatutPiece } from "@/lib/api";
+import { lireProfil, listerDemandes, listerPieces, type StatutPiece } from "@/lib/api";
 import { seDeconnecter } from "../connexion/actions";
 import { FormulaireEnvoi } from "./formulaire-envoi";
 
@@ -28,7 +28,13 @@ async function ContenuEnvoyer() {
     );
   }
 
-  const pieces = await listerPieces(profil.dossier.id);
+  const [pieces, demandes] = await Promise.all([
+    listerPieces(profil.dossier.id),
+    listerDemandes(profil.dossier.id),
+  ]);
+  const demandesOuvertes = demandes
+    .filter((d) => d.statut === "OUVERTE")
+    .map((d) => ({ id: d.id, description: d.description, echeance: d.echeance }));
 
   return (
     <>
@@ -53,7 +59,7 @@ async function ContenuEnvoyer() {
 
       <section className="flex flex-col gap-4 p-5">
         <h1 className="text-2xl font-bold text-marly-bleu">Nouvelle pièce</h1>
-        <FormulaireEnvoi dossierId={profil.dossier.id} />
+            <FormulaireEnvoi dossierId={profil.dossier.id} demandes={demandesOuvertes} />
       </section>
 
       <section className="flex flex-col gap-3 p-5 pt-0">

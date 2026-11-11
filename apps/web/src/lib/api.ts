@@ -4,6 +4,7 @@ import { lireJeton } from "./session";
 export type Regime = "REEL" | "IGS";
 export type RoleMarly = "RESPONSABLE" | "COMPTABLE" | "PME" | "ADMIN";
 export type StatutPiece = "EN_ATTENTE" | "RECUE" | "A_COMPLETER" | "TRAITEE" | "REMPLACEE";
+export type StatutDemande = "OUVERTE" | "SATISFAITE" | "ANNULEE";
 
 export interface ResumeDossier {
   id: string;
@@ -12,6 +13,7 @@ export interface ResumeDossier {
   piecesRecues: number;
   aValider: number;
   aCompleter: number;
+  demandesOuvertes: number;
 }
 
 export interface Profil {
@@ -30,6 +32,18 @@ export interface Piece {
   fournisseur: string | null;
   categorie: string;
   statut: StatutPiece;
+}
+
+export interface Demande {
+  id: string;
+  dossierId: string;
+  description: string;
+  echeance: string;
+  statut: StatutDemande;
+  pieceId: string | null;
+  reponseId: string | null;
+  creeLe: string;
+  satisfaiteLe: string | null;
 }
 
 export interface LigneEcriture {
@@ -100,4 +114,8 @@ export function listerPieces(dossierId: string): Promise<Piece[]> {
 
 export function lirePiece(pieceId: string): Promise<DetailPiece> {
   return appelerApi<DetailPiece>(`/pieces/${encodeURIComponent(pieceId)}`);
+}
+
+export function listerDemandes(dossierId: string): Promise<Demande[]> {
+  return appelerApi<Demande[]>(`/dossiers/${encodeURIComponent(dossierId)}/demandes`);
 }

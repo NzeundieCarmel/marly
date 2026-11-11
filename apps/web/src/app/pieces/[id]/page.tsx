@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { lirePiece, listerPieces } from "@/lib/api";
 import { EditeurEcriture } from "./editeur-ecriture";
+import { RenvoyerPiece } from "./renvoyer-piece";
 
 const formatMontant = new Intl.NumberFormat("fr-FR");
 
@@ -101,6 +102,9 @@ async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
             lignesInitiales={ecriture.lignes}
             suivanteId={suivanteId}
           />
+           {piece.statut === "RECUE" && (
+            <RenvoyerPiece pieceId={piece.id} dossierId={dossier.id} suivanteId={suivanteId} />
+          )}
         </div>
       </div>
     </>
