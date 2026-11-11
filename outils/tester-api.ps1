@@ -1,21 +1,33 @@
 # Tests automatiques de l'API Marly
 # Lancement : powershell -ExecutionPolicy Bypass -File .\outils\tester-api.ps1
-# Attention : le script remet les donnees de demonstration a zero.
+# Attention : le script remet les donnees de demonstration a zero (au debut et a la fin).
 
 $api = "http://127.0.0.1:4001/api/v1"
 $racine = Split-Path -Parent $PSScriptRoot
 
+function Reset-DonneesDemo {
+    Push-Location (Join-Path $racine "apps\api")
+    npx.cmd prisma db seed | Out-Null
+    $code = $LASTEXITCODE
+    Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
+    Pop-Location
+    return $code
+}
+
 # 0. Donnees de demonstration propres
 Write-Host "Remise a zero des donnees de demo..." -ForegroundColor Cyan
-Push-Location (Join-Path $racine "apps\api")
-npx.cmd prisma db seed | Out-Null
-$codeSeed = $LASTEXITCODE
-Remove-Item -Recurse -Force .\uploads -ErrorAction SilentlyContinue
-Pop-Location
-if ($codeSeed -ne 0) {
+if ((Reset-DonneesDemo) -ne 0) {
     Write-Host "Le seed a echoue. Verifie que la base Docker tourne (docker compose up -d)." -ForegroundColor Red
     exit 1
 }
+
+# Fichiers de test (vraie signature PNG, contenus differents pour eviter les doublons)
+$dossierTest = Join-Path $env:TEMP "marly-tests-auto"
+New-Item -ItemType Directory -Force $dossierTest | Out-Null
+$entetePng = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+[IO.File]::WriteAllBytes("$dossierTest\releve.png", $entetePng + [byte[]](1, 1, 1))
+[IO.File]::WriteAllBytes("$dossierTest\taxi.png", $entetePng + [byte[]](2, 2, 2))
+[IO.File]::WriteAllBytes("$dossierTest\autre.png", $entetePng + [byte[]](3, 3, 3))
 
 $ErrorActionPreference = "Stop"
 
@@ -48,6 +60,15 @@ function Send-JsonMarly($uri, $entete, $objet) {
     Invoke-RestMethod -Method Post -Uri $uri -Headers $entete -ContentType "application/json; charset=utf-8" -Body $octets
 }
 
+function Send-PieceMarly($entete, $dossierId, $fichier, $demandeId) {
+    $options = @("-s", "-o", "NUL", "-w", "%{http_code}",
+        "-H", "Authorization: $($entete.Authorization)",
+        "-F", "date=2026-11-10", "-F", "montantTtc=5000", "-F", "categorie=Autre",
+        "-F", "fichier=@$fichier")
+    if ($demandeId) { $options += @("-F", "demandeId=$demandeId") }
+    & curl.exe @options "$api/dossiers/$dossierId/pieces"
+}
+
 function ConvertTo-CorpsValidation($detail) {
     @{
         journal = $detail.ecriture.journal
@@ -76,13 +97,17 @@ try {
 
     $detailReel = Invoke-RestMethod -Uri "$api/pieces/$($eneoReel.id)" -Headers $enteteMarc
     $detailIgs = Invoke-RestMethod -Uri "$api/pieces/$($eneoIgs.id)" -Headers $enteteMarc
+
+    $demandesPaul = Invoke-RestMethod -Uri "$api/dossiers/$($sienPaul.id)/demandes" -Headers $entetePaul
+    $demandeReleve = $demandesPaul | Where-Object { $_.description -like "*MTN*" }
+    $demandeTaxi = $demandesPaul | Where-Object { $_.pieceId }
 } catch {
     Write-Host "Preparation impossible : $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "Verifie que l'API tourne (fenetre 2)." -ForegroundColor Red
     exit 1
 }
 
-if (-not $autre -or -not $sienPaul -or -not $studio -or -not $eneoReel -or -not $camtelReel -or -not $eneoIgs) {
+if (-not $autre -or -not $sienPaul -or -not $studio -or -not $eneoReel -or -not $camtelReel -or -not $eneoIgs -or -not $demandeReleve -or -not $demandeTaxi) {
     Write-Host "Donnees de demo introuvables." -ForegroundColor Red
     exit 1
 }
@@ -118,9 +143,28 @@ $resultats = @(
     Test-Marly "Ecriture desequilibree refusee" { Send-JsonMarly "$api/pieces/$($eneoReel.id)/valider" $enteteMarc $corpsDesequilibre | Out-Null; 200 } 400
     Test-Marly "Validation par Marc acceptee" { (Send-JsonMarly "$api/pieces/$($eneoReel.id)/valider" $enteteMarc $corpsValide).piece.statut } "TRAITEE"
     Test-Marly "Double validation refusee" { Send-JsonMarly "$api/pieces/$($eneoReel.id)/valider" $enteteMarc $corpsValide | Out-Null; 200 } 409
+
+    # Demandes de pieces
+    Test-Marly "Paul voit 3 demandes" { $demandesPaul.Count } 3
+    Test-Marly "Paul ne peut pas creer de demande" { Send-JsonMarly "$api/dossiers/$($sienPaul.id)/demandes" $entetePaul @{ description = "Test" } | Out-Null; 200 } 403
+    Test-Marly "Paul bloque sur les demandes de l'Agence" { Invoke-RestMethod "$api/dossiers/$($autre.id)/demandes" -Headers $entetePaul | Out-Null; 200 } 404
+    Test-Marly "Marc cree une demande" { $script:demandeAgence = Send-JsonMarly "$api/dossiers/$($autre.id)/demandes" $enteteMarc @{ description = "Releve Orange Money d'octobre" }; $script:demandeAgence.statut } "OUVERTE"
+    Test-Marly "Marc annule cette demande" { (Send-JsonMarly "$api/demandes/$($script:demandeAgence.id)/annuler" $enteteMarc @{}).statut } "ANNULEE"
+    Test-Marly "Marc renvoie Camtel a la PME" { (Send-JsonMarly "$api/pieces/$($camtelReel.id)/a-completer" $enteteMarc @{ motif = "Facture coupee" }).statut } "OUVERTE"
+    Test-Marly "Camtel passe a completer" { $p = Invoke-RestMethod "$api/dossiers/$($sienPaul.id)/pieces" -Headers $enteteMarc; ($p | Where-Object { $_.id -eq $camtelReel.id }).statut } "A_COMPLETER"
+    Test-Marly "Piece validee non renvoyable" { Send-JsonMarly "$api/pieces/$($eneoReel.id)/a-completer" $enteteMarc @{ motif = "Test" } | Out-Null; 200 } 409
+    Test-Marly "Paul repond au releve MTN" { Send-PieceMarly $entetePaul $sienPaul.id "$dossierTest\releve.png" $demandeReleve.id } "201"
+    Test-Marly "Demande du releve satisfaite" { $d = Invoke-RestMethod "$api/dossiers/$($sienPaul.id)/demandes" -Headers $entetePaul; ($d | Where-Object { $_.id -eq $demandeReleve.id }).statut } "SATISFAITE"
+    Test-Marly "Paul repond au taxi illisible" { Send-PieceMarly $entetePaul $sienPaul.id "$dossierTest\taxi.png" $demandeTaxi.id } "201"
+    Test-Marly "Taxi d'origine remplace" { $p = Invoke-RestMethod "$api/dossiers/$($sienPaul.id)/pieces" -Headers $enteteMarc; ($p | Where-Object { $_.id -eq $demandeTaxi.pieceId }).statut } "REMPLACEE"
+    Test-Marly "Demande close non reutilisable" { Send-PieceMarly $entetePaul $sienPaul.id "$dossierTest\autre.png" $demandeReleve.id } "409"
 )
 
 $resultats | Format-Table -AutoSize
+
+# Base propre pour la suite
+$ErrorActionPreference = "Continue"
+Reset-DonneesDemo | Out-Null
 
 $echecs = @($resultats | Where-Object { $_.Resultat -eq "ECHEC" }).Count
 if ($echecs -eq 0) {

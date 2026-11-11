@@ -1,5 +1,6 @@
 import { PrismaClient, Regime, Role, StatutPiece } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { prochaineEcheance } from '../src/dossiers/echeances';
 
 const prisma = new PrismaClient();
 
@@ -22,15 +23,28 @@ const pieces = [
 ];
 
 async function main(): Promise<void> {
+  // Ordre de suppression : des tables qui dépendent vers celles dont on dépend
+  await prisma.demandePiece.deleteMany();
   await prisma.piece.deleteMany();
   await prisma.utilisateur.deleteMany();
   await prisma.dossier.deleteMany();
   await prisma.cabinet.deleteMany();
 
   const motDePasseHache = await hash(MOT_DE_PASSE_DEMO, 10);
+  const echeance = prochaineEcheance(new Date());
 
   const cabinet = await prisma.cabinet.create({
     data: { nom: 'Cabinet Ngando & Associés' },
+  });
+
+  const marc = await prisma.utilisateur.create({
+    data: {
+      nom: 'Marc T.',
+      email: 'marc@exemple.cm',
+      motDePasseHache,
+      role: Role.RESPONSABLE,
+      cabinetId: cabinet.id,
+    },
   });
 
   const idsDossiers: string[] = [];
@@ -47,17 +61,34 @@ async function main(): Promise<void> {
         dossierId: dossier.id,
       })),
     });
+
+    // Chaque reçu de taxi illisible fait l'objet d'une demande
+    const illisible = await prisma.piece.findFirst({
+      where: { dossierId: dossier.id, statut: StatutPiece.A_COMPLETER },
+    });
+    if (illisible) {
+      await prisma.demandePiece.create({
+        data: {
+          dossierId: dossier.id,
+          description: 'Montant illisible : recu taxi du 29/10',
+          echeance,
+          pieceId: illisible.id,
+          demandeParId: marc.id,
+        },
+      });
+    }
   }
+
+  // Pièces manquantes réclamées à la Quincaillerie Essomba
+  await prisma.demandePiece.createMany({
+    data: [
+      { dossierId: idsDossiers[0], description: "Releve MTN MoMo d'octobre", echeance, demandeParId: marc.id },
+      { dossierId: idsDossiers[0], description: "Quittance de loyer d'octobre", echeance, demandeParId: marc.id },
+    ],
+  });
 
   await prisma.utilisateur.createMany({
     data: [
-      {
-        nom: 'Marc T.',
-        email: 'marc@exemple.cm',
-        motDePasseHache,
-        role: Role.RESPONSABLE,
-        cabinetId: cabinet.id,
-      },
       {
         nom: 'Awa M.',
         email: 'awa@exemple.cm',
@@ -76,7 +107,7 @@ async function main(): Promise<void> {
     ],
   });
 
-  console.log('Donnees de demo creees : 3 comptes, 5 dossiers, 16 pieces.');
+  console.log('Donnees de demo creees : 3 comptes, 5 dossiers, 16 pieces, 4 demandes.');
 }
 
 main()

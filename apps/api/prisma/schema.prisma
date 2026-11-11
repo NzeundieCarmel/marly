@@ -24,6 +24,13 @@ enum StatutPiece {
   RECUE
   A_COMPLETER
   TRAITEE
+  REMPLACEE
+}
+
+enum StatutDemande {
+  OUVERTE
+  SATISFAITE
+  ANNULEE
 }
 
 model Cabinet {
@@ -36,51 +43,55 @@ model Cabinet {
 }
 
 model Utilisateur {
-  id              String   @id @default(cuid())
+  id              String         @id @default(cuid())
   nom             String
-  email           String?  @unique
-  telephone       String?  @unique
+  email           String?        @unique
+  telephone       String?        @unique
   motDePasseHache String
   role            Role
-  cabinet         Cabinet  @relation(fields: [cabinetId], references: [id])
+  cabinet         Cabinet        @relation(fields: [cabinetId], references: [id])
   cabinetId       String
-  dossier         Dossier? @relation(fields: [dossierId], references: [id])
+  dossier         Dossier?       @relation(fields: [dossierId], references: [id])
   dossierId       String?
-  piecesValidees  Piece[]  @relation("PiecesValidees")
-  creeLe          DateTime @default(now())
+  piecesValidees  Piece[]        @relation("PiecesValidees")
+  demandesCreees  DemandePiece[]
+  creeLe          DateTime       @default(now())
 }
 
 model Dossier {
-  id            String        @id @default(cuid())
+  id            String         @id @default(cuid())
   raisonSociale String
   niu           String?
   rccm          String?
   regime        Regime
-  tauxTva       Decimal       @default(19.25) @db.Decimal(5, 2)
-  cabinet       Cabinet       @relation(fields: [cabinetId], references: [id])
+  tauxTva       Decimal        @default(19.25) @db.Decimal(5, 2)
+  cabinet       Cabinet        @relation(fields: [cabinetId], references: [id])
   cabinetId     String
   pieces        Piece[]
+  demandes      DemandePiece[]
   utilisateurs  Utilisateur[]
-  creeLe        DateTime      @default(now())
+  creeLe        DateTime       @default(now())
 }
 
 model Piece {
-  id          String          @id @default(cuid())
-  dossier     Dossier         @relation(fields: [dossierId], references: [id])
-  dossierId   String
-  date        DateTime
-  montantTtc  Int
-  fournisseur String?
-  categorie   String
-  statut      StatutPiece     @default(RECUE)
-  fichier     String?
-  empreinte   String?
-  journal     String?
-  valideLe    DateTime?
-  validePar   Utilisateur?    @relation("PiecesValidees", fields: [valideParId], references: [id])
-  valideParId String?
-  lignes      LigneEcriture[]
-  creeLe      DateTime        @default(now())
+  id                 String          @id @default(cuid())
+  dossier            Dossier         @relation(fields: [dossierId], references: [id])
+  dossierId          String
+  date               DateTime
+  montantTtc         Int
+  fournisseur        String?
+  categorie          String
+  statut             StatutPiece     @default(RECUE)
+  fichier            String?
+  empreinte          String?
+  journal            String?
+  valideLe           DateTime?
+  validePar          Utilisateur?    @relation("PiecesValidees", fields: [valideParId], references: [id])
+  valideParId        String?
+  lignes             LigneEcriture[]
+  demandesConcernees DemandePiece[]  @relation("PieceConcernee")
+  demandeSatisfaite  DemandePiece?   @relation("PieceReponse")
+  creeLe             DateTime        @default(now())
 
   @@index([dossierId, date])
 }
@@ -97,4 +108,23 @@ model LigneEcriture {
   credit  Int     @default(0)
 
   @@index([pieceId])
+}
+
+model DemandePiece {
+  id           String        @id @default(cuid())
+  dossier      Dossier       @relation(fields: [dossierId], references: [id])
+  dossierId    String
+  description  String
+  echeance     DateTime
+  statut       StatutDemande @default(OUVERTE)
+  piece        Piece?        @relation("PieceConcernee", fields: [pieceId], references: [id])
+  pieceId      String?
+  reponse      Piece?        @relation("PieceReponse", fields: [reponseId], references: [id])
+  reponseId    String?       @unique
+  demandePar   Utilisateur   @relation(fields: [demandeParId], references: [id])
+  demandeParId String
+  creeLe       DateTime      @default(now())
+  satisfaiteLe DateTime?
+
+  @@index([dossierId, statut])
 }

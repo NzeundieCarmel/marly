@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Piece, Prisma, StatutPiece } from '@prisma/client';
+import { Piece, Prisma, StatutDemande, StatutPiece } from '@prisma/client';
 import type { ChargeJeton } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -10,6 +10,7 @@ export interface ResumeDossier {
   piecesRecues: number;
   aValider: number;
   aCompleter: number;
+  demandesOuvertes: number;
 }
 
 @Injectable()
@@ -49,17 +50,24 @@ export class DossiersService {
     const dossiers = await this.prisma.dossier.findMany({
       where: this.filtreAcces(utilisateur),
       orderBy: { raisonSociale: 'asc' },
-      include: { pieces: { select: { statut: true } } },
+      include: {
+        pieces: { select: { statut: true } },
+        _count: {
+          select: { demandes: { where: { statut: StatutDemande.OUVERTE } } },
+        },
+      },
     });
 
     return dossiers.map((d) => ({
       id: d.id,
       raisonSociale: d.raisonSociale,
       regime: d.regime,
-      piecesRecues: d.pieces.length,
+      piecesRecues: d.pieces.filter((p) => p.statut !== StatutPiece.REMPLACEE)
+        .length,
       aValider: d.pieces.filter((p) => p.statut === StatutPiece.RECUE).length,
       aCompleter: d.pieces.filter((p) => p.statut === StatutPiece.A_COMPLETER)
         .length,
+      demandesOuvertes: d._count.demandes,
     }));
   }
 

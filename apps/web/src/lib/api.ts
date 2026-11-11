@@ -3,7 +3,7 @@ import { lireJeton } from "./session";
 
 export type Regime = "REEL" | "IGS";
 export type RoleMarly = "RESPONSABLE" | "COMPTABLE" | "PME" | "ADMIN";
-export type StatutPiece = "EN_ATTENTE" | "RECUE" | "A_COMPLETER" | "TRAITEE";
+export type StatutPiece = "EN_ATTENTE" | "RECUE" | "A_COMPLETER" | "TRAITEE" | "REMPLACEE";
 
 export interface ResumeDossier {
   id: string;

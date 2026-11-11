@@ -30,4 +30,10 @@ export class CreerPieceDto {
   @IsNotEmpty({ message: 'La categorie est obligatoire' })
   @MaxLength(60)
   categorie!: string;
+
+  // Facultatif : la pièce répond à une demande du cabinet
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  demandeId?: string;
 }

@@ -8,6 +8,7 @@ const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
   RECUE: { texte: "À valider", classes: "bg-[#E6EEF9] text-[#1D4F91]" },
   A_COMPLETER: { texte: "À compléter", classes: "bg-[#FFF2DB] text-[#7A4A00]" },
   TRAITEE: { texte: "Validée", classes: "bg-[#E3F5EC] text-[#11734B]" },
+  REMPLACEE: { texte: "Remplacée", classes: "bg-[#EEF1F5] text-marly-gris" },
 };
 
 const formatMontant = new Intl.NumberFormat("fr-FR");
