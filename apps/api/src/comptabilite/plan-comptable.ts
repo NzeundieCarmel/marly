@@ -13,7 +13,10 @@ export const COMPTES_PAR_CATEGORIE: Record<
   'Électricité, eau': { compte: '6052', intitule: 'Électricité' },
   Achats: { compte: '601', intitule: 'Achats de marchandises' },
   Transport: { compte: '618', intitule: 'Autres frais de transport' },
-  'Télécommunications': { compte: '628', intitule: 'Frais de télécommunications' },
+  Télécommunications: {
+    compte: '628',
+    intitule: 'Frais de télécommunications',
+  },
   Fournitures: { compte: '6055', intitule: 'Fournitures de bureau' },
   Autre: { compte: '658', intitule: 'Charges diverses' },
 };
@@ -40,7 +43,10 @@ export function proposerEcriture(
   const charge = COMPTES_PAR_CATEGORIE[piece.categorie] ?? COMPTE_PAR_DEFAUT;
   const mois = String(piece.date.getUTCMonth() + 1).padStart(2, '0');
   const libelle =
-    `${piece.fournisseur ?? piece.categorie} ${mois}/${piece.date.getUTCFullYear()}`.slice(0, 80);
+    `${piece.fournisseur ?? piece.categorie} ${mois}/${piece.date.getUTCFullYear()}`.slice(
+      0,
+      80,
+    );
 
   const ttc = piece.montantTtc;
   // À l'IGS, la TVA n'est pas récupérable : toute la dépense va en charge
@@ -54,7 +60,13 @@ export function proposerEcriture(
     { compte: charge.compte, libelle, tiers: null, debit: ht, credit: 0 },
   ];
   if (tva > 0) {
-    lignes.push({ compte: COMPTE_TVA_RECUPERABLE, libelle, tiers: null, debit: tva, credit: 0 });
+    lignes.push({
+      compte: COMPTE_TVA_RECUPERABLE,
+      libelle,
+      tiers: null,
+      debit: tva,
+      credit: 0,
+    });
   }
   lignes.push({
     compte: COMPTE_FOURNISSEURS,

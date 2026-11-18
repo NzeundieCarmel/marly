@@ -70,7 +70,10 @@ export class ComptabiliteService {
     return piece;
   }
 
-  async detail(pieceId: string, utilisateur: ChargeJeton): Promise<DetailPiece> {
+  async detail(
+    pieceId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<DetailPiece> {
     const piece = await this.chargerPiece(pieceId, utilisateur);
     const dossier = {
       id: piece.dossier.id,
@@ -127,7 +130,7 @@ export class ComptabiliteService {
     }
 
     for (const ligne of dto.lignes) {
-      if ((ligne.debit > 0) === (ligne.credit > 0)) {
+      if (ligne.debit > 0 === ligne.credit > 0) {
         throw new BadRequestException(
           `Compte ${ligne.compte} : chaque ligne doit avoir soit un debit, soit un credit`,
         );
@@ -188,7 +191,9 @@ export class ComptabiliteService {
 
     return {
       chemin,
-      type: TYPES_FICHIER[extname(chemin).toLowerCase()] ?? 'application/octet-stream',
+      type:
+        TYPES_FICHIER[extname(chemin).toLowerCase()] ??
+        'application/octet-stream',
     };
   }
 }

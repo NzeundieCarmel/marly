@@ -3,14 +3,17 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import {
+  lireApercuExport,
   lireProfil,
   listerDemandes,
   listerDossiers,
+  listerExports,
   listerPieces,
   type StatutPiece,
 } from "@/lib/api";
 import { prochaineEcheance, versIsoJour } from "@/lib/echeances";
 import { DemandesDossier } from "./demandes-dossier";
+import { ExportSage } from "./export-sage";
 
 const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
   EN_ATTENTE: { texte: "En attente", classes: "bg-[#EEF1F5] text-marly-gris" },
@@ -24,11 +27,13 @@ const formatMontant = new Intl.NumberFormat("fr-FR");
 
 async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [profil, dossiers, pieces, demandes] = await Promise.all([
+  const [profil, dossiers, pieces, demandes, apercuExport, lotsExport] = await Promise.all([
     lireProfil(),
     listerDossiers(),
     listerPieces(id),
     listerDemandes(id),
+    lireApercuExport(id),
+    listerExports(id),
   ]);
   const dossier = dossiers.find((d) => d.id === id);
   if (!dossier) {
@@ -36,7 +41,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   }
   const premiereAValider = pieces.find((p) => p.statut === "RECUE");
   const peutGerer = profil.role === "RESPONSABLE" || profil.role === "COMPTABLE";
-  
+
   // La date du jour est lue à chaque visite, jamais figée à l'avance
   await connection();
   const echeanceParDefaut = versIsoJour(prochaineEcheance(new Date()));
@@ -71,6 +76,10 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         echeanceParDefaut={echeanceParDefaut}
         peutGerer={peutGerer}
       />
+
+      {peutGerer && (
+        <ExportSage dossierId={dossier.id} apercu={apercuExport} lots={lotsExport} />
+      )}
 
       <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
         <table className="w-full min-w-[640px] border-collapse text-left">

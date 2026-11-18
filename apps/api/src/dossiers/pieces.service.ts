@@ -95,7 +95,10 @@ export class PiecesService {
     // 6. Enregistrement du fichier sous un nom aléatoire
     const nomFichier = `${randomUUID()}.${extension}`;
     await mkdir(join(DOSSIER_UPLOADS, dossierId), { recursive: true });
-    await writeFile(join(DOSSIER_UPLOADS, dossierId, nomFichier), fichier.buffer);
+    await writeFile(
+      join(DOSSIER_UPLOADS, dossierId, nomFichier),
+      fichier.buffer,
+    );
 
     const donnees = {
       dossierId,

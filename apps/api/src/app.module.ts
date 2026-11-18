@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ComptabiliteModule } from './comptabilite/comptabilite.module';
+import { ExportsModule } from './exports/exports.module';
 import { DossiersModule } from './dossiers/dossiers.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SanteModule } from './sante/sante.module';
@@ -16,6 +17,7 @@ import { SanteModule } from './sante/sante.module';
     AuthModule,
     DossiersModule,
     ComptabiliteModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

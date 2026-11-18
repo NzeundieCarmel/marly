@@ -23,7 +23,10 @@ export class DemandesService {
     private readonly dossiers: DossiersService,
   ) {}
 
-  async lister(dossierId: string, utilisateur: ChargeJeton): Promise<DemandePiece[]> {
+  async lister(
+    dossierId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<DemandePiece[]> {
     await this.dossiers.verifierAcces(dossierId, utilisateur);
     return this.prisma.demandePiece.findMany({
       where: { dossierId },
@@ -41,13 +44,18 @@ export class DemandesService {
       data: {
         dossierId,
         description: dto.description.trim(),
-        echeance: dto.echeance ? dateAMidi(dto.echeance) : prochaineEcheance(new Date()),
+        echeance: dto.echeance
+          ? dateAMidi(dto.echeance)
+          : prochaineEcheance(new Date()),
         demandeParId: utilisateur.sub,
       },
     });
   }
 
-  async annuler(demandeId: string, utilisateur: ChargeJeton): Promise<DemandePiece> {
+  async annuler(
+    demandeId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<DemandePiece> {
     const demande = await this.prisma.demandePiece.findUnique({
       where: { id: demandeId },
     });
@@ -74,7 +82,9 @@ export class DemandesService {
     utilisateur: ChargeJeton,
     dto: ACompleterDto,
   ): Promise<DemandePiece> {
-    const piece = await this.prisma.piece.findUnique({ where: { id: pieceId } });
+    const piece = await this.prisma.piece.findUnique({
+      where: { id: pieceId },
+    });
     if (!piece) {
       throw new NotFoundException('Piece introuvable');
     }
@@ -90,7 +100,10 @@ export class DemandesService {
     }
 
     const description =
-      `${dto.motif.trim()} : ${piece.fournisseur ?? piece.categorie} du ${formatJour(piece.date)}`.slice(0, 160);
+      `${dto.motif.trim()} : ${piece.fournisseur ?? piece.categorie} du ${formatJour(piece.date)}`.slice(
+        0,
+        160,
+      );
 
     const [, demande] = await this.prisma.$transaction([
       this.prisma.piece.update({

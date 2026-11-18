@@ -55,6 +55,7 @@ model Utilisateur {
   dossierId       String?
   piecesValidees  Piece[]        @relation("PiecesValidees")
   demandesCreees  DemandePiece[]
+  lotsExport      LotExport[]
   creeLe          DateTime       @default(now())
 }
 
@@ -69,6 +70,7 @@ model Dossier {
   cabinetId     String
   pieces        Piece[]
   demandes      DemandePiece[]
+  lotsExport    LotExport[]
   utilisateurs  Utilisateur[]
   creeLe        DateTime       @default(now())
 }
@@ -91,6 +93,8 @@ model Piece {
   lignes             LigneEcriture[]
   demandesConcernees DemandePiece[]  @relation("PieceConcernee")
   demandeSatisfaite  DemandePiece?   @relation("PieceReponse")
+  lotExport          LotExport?      @relation(fields: [lotExportId], references: [id], onDelete: SetNull)
+  lotExportId        String?
   creeLe             DateTime        @default(now())
 
   @@index([dossierId, date])
@@ -127,4 +131,20 @@ model DemandePiece {
   satisfaiteLe DateTime?
 
   @@index([dossierId, statut])
+}
+
+model LotExport {
+  id          String      @id @default(cuid())
+  dossier     Dossier     @relation(fields: [dossierId], references: [id])
+  dossierId   String
+  creePar     Utilisateur @relation(fields: [creeParId], references: [id])
+  creeParId   String
+  nbPieces    Int
+  nbLignes    Int
+  totalDebit  Int
+  totalCredit Int
+  pieces      Piece[]
+  creeLe      DateTime    @default(now())
+
+  @@index([dossierId, creeLe])
 }

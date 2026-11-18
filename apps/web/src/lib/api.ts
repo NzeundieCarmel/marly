@@ -119,3 +119,31 @@ export function lirePiece(pieceId: string): Promise<DetailPiece> {
 export function listerDemandes(dossierId: string): Promise<Demande[]> {
   return appelerApi<Demande[]>(`/dossiers/${encodeURIComponent(dossierId)}/demandes`);
 }
+
+
+export interface ApercuExport {
+  nbPieces: number;
+  nbLignes: number;
+  totalDebit: number;
+  totalCredit: number;
+  du: string | null;
+  au: string | null;
+}
+
+export interface LotExport {
+  id: string;
+  creeLe: string;
+  creePar: string;
+  nbPieces: number;
+  nbLignes: number;
+  totalDebit: number;
+  totalCredit: number;
+}
+
+export function lireApercuExport(dossierId: string): Promise<ApercuExport> {
+  return appelerApi<ApercuExport>(`/dossiers/${encodeURIComponent(dossierId)}/exports/apercu`);
+}
+
+export function listerExports(dossierId: string): Promise<LotExport[]> {
+  return appelerApi<LotExport[]>(`/dossiers/${encodeURIComponent(dossierId)}/exports`);
+}
