@@ -5,6 +5,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { InscriptionController } from './inscription.controller';
+import { InscriptionService } from './inscription.service';
 
 @Module({
   imports: [
@@ -18,9 +20,10 @@ import { JwtAuthGuard } from './jwt-auth.guard';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, InscriptionController],
   providers: [
     AuthService,
+    InscriptionService,
     // Toutes les routes exigent un jeton, sauf celles marquées @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

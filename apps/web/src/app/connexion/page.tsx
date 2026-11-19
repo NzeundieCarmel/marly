@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { FormulaireConnexion } from "./formulaire";
 
@@ -26,6 +27,12 @@ export default function PageConnexion() {
           <FormulaireConnexion />
         </Suspense>
       </div>
+      <p className="mt-6 text-center text-sm text-marly-gris">
+        Nouveau cabinet ?{" "}
+        <Link href="/inscription" className="font-bold text-marly-bleu underline">
+          Créer un compte
+        </Link>
+      </p>
     </main>
   );
 }
