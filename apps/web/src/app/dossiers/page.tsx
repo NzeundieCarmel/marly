@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { connection } from "next/server";
+import { Suspense } from "react";
 import { lireProfil, listerDossiers, type ResumeDossier } from "@/lib/api";
 import { formatJourMois, joursAvant, prochaineEcheance } from "@/lib/echeances";
 import { seDeconnecter } from "../connexion/actions";
@@ -48,6 +48,25 @@ function Chargement() {
   );
 }
 
+const CLASSES_BOUTON =
+  "flex h-11 items-center rounded-xl bg-marly-bleu px-5 font-bold text-white";
+
+function Accueil() {
+  return (
+    <section className="flex flex-col items-start gap-4 rounded-2xl border border-marly-bord bg-white p-8">
+      <h2 className="text-2xl font-bold text-marly-bleu">Bienvenue sur Marly</h2>
+      <ol className="flex list-decimal flex-col gap-2 pl-5 text-marly-texte">
+        <li>Crée un dossier pour chaque entreprise que tu suis.</li>
+        <li>Invite son gérant : il enverra ses pièces depuis son téléphone.</li>
+        <li>Valide les écritures proposées, puis exporte-les vers Sage.</li>
+      </ol>
+      <Link href="/dossiers/nouveau" className={CLASSES_BOUTON}>
+        Créer mon premier dossier
+      </Link>
+    </section>
+  );
+}
+
 // Tout ce qui dépend de l'utilisateur connecté est isolé dans <Suspense>
 async function ContenuDossiers() {
   const [profil, dossiers] = await Promise.all([lireProfil(), listerDossiers()]);
@@ -68,69 +87,82 @@ async function ContenuDossiers() {
           <span className="text-sm text-marly-gris">{profil.cabinet}</span>
           <h1 className="text-3xl font-bold text-marly-bleu">Bonjour, {profil.nom}</h1>
         </div>
-        <form action={seDeconnecter}>
-          <button
-            type="submit"
-            className="h-11 rounded-xl border border-marly-bord bg-white px-4 font-medium text-marly-texte"
-          >
-            Se déconnecter
-          </button>
-        </form>
+        <div className="flex flex-wrap gap-3">
+          {dossiers.length > 0 && (
+            <Link href="/dossiers/nouveau" className={CLASSES_BOUTON}>
+              Nouveau dossier
+            </Link>
+          )}
+          <form action={seDeconnecter}>
+            <button
+              type="submit"
+              className="h-11 rounded-xl border border-marly-bord bg-white px-4 font-medium text-marly-texte"
+            >
+              Se déconnecter
+            </button>
+          </form>
+        </div>
       </header>
 
-      <div
-        role="status"
-        className={`mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl p-4 ${
-          urgent ? "bg-[#FDECEC] text-[#A12A2A]" : "bg-[#FFF2DB] text-[#6E4300]"
-        }`}
-      >
-        <strong className="text-2xl">J-{jours}</strong>
-        <span>
-          avant l&apos;échéance du <strong>{formatJourMois(echeance)}</strong>.{" "}
-          {dossiersARelancer > 0
-            ? `${dossiersARelancer} dossier${dossiersARelancer > 1 ? "s" : ""} attend${dossiersARelancer > 1 ? "ent" : ""} encore des pièces.`
-            : "Tous les dossiers sont complets."}
-        </span>
-      </div>
+      {dossiers.length === 0 ? (
+        <Accueil />
+      ) : (
+        <>
+          <div
+            role="status"
+            className={`mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl p-4 ${
+              urgent ? "bg-[#FDECEC] text-[#A12A2A]" : "bg-[#FFF2DB] text-[#6E4300]"
+            }`}
+          >
+            <strong className="text-2xl">J-{jours}</strong>
+            <span>
+              avant l&apos;échéance du <strong>{formatJourMois(echeance)}</strong>.{" "}
+              {dossiersARelancer > 0
+                ? `${dossiersARelancer} dossier${dossiersARelancer > 1 ? "s" : ""} attend${dossiersARelancer > 1 ? "ent" : ""} encore des pièces.`
+                : "Tous les dossiers sont complets."}
+            </span>
+          </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Carte titre="Dossiers" valeur={dossiers.length} />
-        <Carte titre="Pièces à valider" valeur={totalAValider} />
-        <Carte titre="Pièces demandées" valeur={totalDemandes} />
-      </div>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Carte titre="Dossiers" valeur={dossiers.length} />
+            <Carte titre="Pièces à valider" valeur={totalAValider} />
+            <Carte titre="Pièces demandées" valeur={totalDemandes} />
+          </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
-        <table className="w-full min-w-[720px] border-collapse text-left">
-          <thead>
-            <tr className="text-sm text-marly-gris">
-              <th className="px-5 py-3 font-medium">Dossier</th>
-              <th className="px-3 py-3 font-medium">Régime</th>
-              <th className="px-3 py-3 text-right font-medium">Reçues</th>
-              <th className="px-3 py-3 text-right font-medium">À valider</th>
-              <th className="px-3 py-3 text-right font-medium">Demandées</th>
-              <th className="px-5 py-3 font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dossiers.map((d) => (
-              <tr key={d.id} className="border-t border-marly-bord">
-                <td className="px-5 py-4 font-bold">
-                  <Link href={`/dossiers/${d.id}`} className="text-marly-bleu underline">
-                    {d.raisonSociale}
-                  </Link>
-                </td>
-                <td className="px-3 py-4">{d.regime === "REEL" ? "Réel" : "IGS"}</td>
-                <td className="px-3 py-4 text-right">{d.piecesRecues}</td>
-                <td className="px-3 py-4 text-right">{d.aValider}</td>
-                <td className="px-3 py-4 text-right">{d.demandesOuvertes}</td>
-                <td className="px-5 py-4">
-                  <Statut dossier={d} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
+            <table className="w-full min-w-[720px] border-collapse text-left">
+              <thead>
+                <tr className="text-sm text-marly-gris">
+                  <th className="px-5 py-3 font-medium">Dossier</th>
+                  <th className="px-3 py-3 font-medium">Régime</th>
+                  <th className="px-3 py-3 text-right font-medium">Reçues</th>
+                  <th className="px-3 py-3 text-right font-medium">À valider</th>
+                  <th className="px-3 py-3 text-right font-medium">Demandées</th>
+                  <th className="px-5 py-3 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dossiers.map((d) => (
+                  <tr key={d.id} className="border-t border-marly-bord">
+                    <td className="px-5 py-4 font-bold">
+                      <Link href={`/dossiers/${d.id}`} className="text-marly-bleu underline">
+                        {d.raisonSociale}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-4">{d.regime === "REEL" ? "Réel" : "IGS"}</td>
+                    <td className="px-3 py-4 text-right">{d.piecesRecues}</td>
+                    <td className="px-3 py-4 text-right">{d.aValider}</td>
+                    <td className="px-3 py-4 text-right">{d.demandesOuvertes}</td>
+                    <td className="px-5 py-4">
+                      <Statut dossier={d} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </>
   );
 }

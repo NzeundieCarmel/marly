@@ -147,3 +147,17 @@ export function lireApercuExport(dossierId: string): Promise<ApercuExport> {
 export function listerExports(dossierId: string): Promise<LotExport[]> {
   return appelerApi<LotExport[]>(`/dossiers/${encodeURIComponent(dossierId)}/exports`);
 }
+
+
+export interface FicheDossier {
+  id: string;
+  raisonSociale: string;
+  regime: Regime;
+  niu: string | null;
+  rccm: string | null;
+  tauxTva: number;
+}
+
+export function lireDossier(dossierId: string): Promise<FicheDossier> {
+  return appelerApi<FicheDossier>(`/dossiers/${encodeURIComponent(dossierId)}`);
+}

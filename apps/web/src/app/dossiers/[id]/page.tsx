@@ -60,6 +60,15 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
             {dossier.aValider} à valider
           </span>
         </div>
+          <div className="flex flex-wrap gap-3">
+          {peutGerer && (
+            <Link
+              href={`/dossiers/${dossier.id}/modifier`}
+              className="flex h-11 items-center rounded-xl border border-marly-bord bg-white px-4 font-medium"
+            >
+              Modifier
+            </Link>
+          )}
         {premiereAValider && peutGerer && (
           <Link
             href={`/pieces/${premiereAValider.id}`}
@@ -68,6 +77,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
             Valider les pièces ({dossier.aValider})
           </Link>
         )}
+        </div>
       </header>
 
       <DemandesDossier
