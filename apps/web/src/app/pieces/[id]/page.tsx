@@ -1,122 +1,156 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { lirePiece, listerPieces } from "@/lib/api";
+import { lirePiece, listerPieces, type StatutPiece } from "@/lib/api";
+import { formatMontant } from "@/lib/format";
+import { CadreCabinet } from "@/components/cadre-cabinet";
+import { Pastille, type Ton } from "@/components/pastille";
 import { EditeurEcriture } from "./editeur-ecriture";
 import { RenvoyerPiece } from "./renvoyer-piece";
+import { Visionneuse } from "./visionneuse";
 
-const formatMontant = new Intl.NumberFormat("fr-FR");
+const STATUTS: Record<StatutPiece, { ton: Ton; texte: string }> = {
+  EN_ATTENTE: { ton: "neutral", texte: "En attente" },
+  RECUE: { ton: "info", texte: "À valider" },
+  A_COMPLETER: { ton: "warning", texte: "À compléter" },
+  TRAITEE: { ton: "success", texte: "Validée" },
+  REMPLACEE: { ton: "neutral", texte: "Remplacée" },
+};
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { timeZone: "UTC" });
-}
+const FLECHE =
+  "flex h-10 w-10 items-center justify-center rounded-[10px] border border-line-strong bg-surface text-ink hover:bg-survol";
 
 async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const detail = await lirePiece(id);
-  const { piece, dossier, ecriture } = detail;
+  const { piece, dossier, ecriture } = await lirePiece(id);
+  const pieces = await listerPieces(dossier.id);
 
-  // Pièces encore à valider dans ce dossier, pour enchaîner sans revenir en arrière
-  const aValider = (await listerPieces(dossier.id)).filter((p) => p.statut === "RECUE");
+  // Navigation parmi les pièces à valider du dossier
+  const aValider = pieces.filter((p) => p.statut === "RECUE");
   const position = aValider.findIndex((p) => p.id === piece.id);
-  const suivanteId = aValider.find((p) => p.id !== piece.id)?.id ?? null;
-  const urlFichier = `/api/pieces/${piece.id}/fichier`;
+  const precedente = position > 0 ? aValider[position - 1].id : null;
+  const suivante = position >= 0 && position < aValider.length - 1 ? aValider[position + 1].id : null;
+  // Après validation : la suivante, sinon la première restante
+  const suivanteId = suivante ?? aValider.find((p) => p.id !== piece.id)?.id ?? null;
+  const modifiable = piece.statut === "RECUE";
+  const statut = STATUTS[piece.statut];
+  const titre = `${piece.fournisseur ?? "Pièce"} · ${piece.categorie}`;
 
   return (
-    <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 flex flex-wrap gap-2 text-sm text-muted">
-        <Link href="/dossiers" className="underline">Dossiers</Link>
-        <span aria-hidden="true">›</span>
-        <Link href={`/dossiers/${dossier.id}`} className="underline">{dossier.raisonSociale}</Link>
-        <span aria-hidden="true">›</span>
-        <span className="font-medium text-ink">
-          {position >= 0 ? `Pièce ${position + 1} sur ${aValider.length} à valider` : "Pièce"}
-        </span>
-      </nav>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-heading">
-          {piece.fournisseur ?? piece.categorie} · {formatMontant.format(piece.montantTtc)} FCFA
-        </h1>
-        <span className="rounded-full bg-info-bg px-3 py-1 text-sm font-medium text-info-ink">
-          {dossier.regime === "REEL" ? `Régime réel · TVA ${dossier.tauxTva} %` : "IGS · sans TVA récupérable"}
-        </span>
+    <CadreCabinet actif="valider">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Fil d'Ariane" className="flex flex-wrap gap-2 text-sm text-muted">
+          <Link href={`/dossiers/${dossier.id}`} className="underline">{dossier.raisonSociale}</Link>
+          <span aria-hidden="true">›</span>
+          <span>{modifiable ? "Pièces à valider" : "Pièce"}</span>
+        </nav>
+        {position >= 0 && (
+          <div className="flex items-center gap-2">
+            {precedente ? (
+              <Link href={`/pieces/${precedente}`} aria-label="Pièce précédente" className={FLECHE}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+              </Link>
+            ) : (
+              <span className={`${FLECHE} opacity-40`} aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+              </span>
+            )}
+            <span className="px-1 text-sm font-medium tabular-nums">
+              {position + 1} sur {aValider.length}
+            </span>
+            {suivante ? (
+              <Link href={`/pieces/${suivante}`} aria-label="Pièce suivante" className={FLECHE}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+              </Link>
+            ) : (
+              <span className={`${FLECHE} opacity-40`} aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {piece.statut === "TRAITEE" && (
-        <p role="status" className="mb-4 rounded-xl bg-success-bg p-3 text-sm text-success-ink">
-          Pièce validée{piece.valideLe ? ` le ${formatDate(piece.valideLe)}` : ""}.
-        </p>
-      )}
-      {piece.statut === "A_COMPLETER" && (
-        <p role="status" className="mb-4 rounded-xl bg-warning-bg p-3 text-sm text-warning-ink">
-          Pièce à compléter par l&apos;entreprise avant validation.
-        </p>
-      )}
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <h1 className="text-[28px] font-bold leading-[34px] text-heading">{titre}</h1>
+        <Pastille ton={statut.ton}>{statut.texte}</Pastille>
+        <span className="text-sm text-muted">
+          {dossier.regime === "REEL"
+            ? `Régime réel · TVA ${String(dossier.tauxTva).replace(".", ",")} %`
+            : "IGS · sans TVA"}
+        </span>
+      </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section aria-label="Pièce reçue" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
-          {piece.aUnFichier ? (
-            <>
-              <iframe
-                src={urlFichier}
-                title="Pièce justificative"
-                className="h-[480px] w-full rounded-lg border border-line-strong bg-sunken"
-              />
-              <a href={urlFichier} target="_blank" rel="noreferrer" className="text-sm text-heading underline">
-                Ouvrir la pièce dans un nouvel onglet
-              </a>
-            </>
-          ) : (
-            <div className="flex h-[480px] items-center justify-center rounded-lg bg-sunken p-6 text-center text-muted">
-              Aucun fichier joint (pièce de démonstration).
-            </div>
-          )}
-        </section>
+      <div className="flex flex-wrap items-start gap-6">
+        <Visionneuse
+          src={piece.aUnFichier ? `/api/pieces/${piece.id}/fichier` : null}
+          nom={titre}
+        />
 
-        <div className="flex min-w-0 flex-col gap-4">
-          <section aria-label="Saisi par l'entreprise" className="grid grid-cols-2 gap-4 rounded-2xl border border-line bg-surface p-5 text-sm sm:grid-cols-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted">Date</span>
-              <span>{formatDate(piece.date)}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted">Fournisseur</span>
-              <span>{piece.fournisseur ?? "Non précisé"}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted">Montant TTC</span>
-              <span>{formatMontant.format(piece.montantTtc)} FCFA</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted">Catégorie</span>
-              <span>{piece.categorie}</span>
-            </div>
+        <div className="flex min-w-0 flex-[999_1_440px] flex-col gap-4">
+          <section aria-labelledby="titre-saisie" className="flex flex-col gap-3.5 rounded-2xl border border-line bg-surface px-5 py-4">
+            <h2 id="titre-saisie" className="text-base font-bold">Saisi par l&apos;entreprise</h2>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-[13px] text-muted">Date</dt>
+                <dd className="tabular-nums">{new Date(piece.date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}</dd>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-[13px] text-muted">Fournisseur</dt>
+                <dd>{piece.fournisseur ?? "Non précisé"}</dd>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-[13px] text-muted">Montant TTC</dt>
+                <dd className="tabular-nums">{formatMontant(piece.montantTtc)} FCFA</dd>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-[13px] text-muted">Catégorie</dt>
+                <dd>{piece.categorie}</dd>
+              </div>
+            </dl>
+            {piece.statut === "TRAITEE" && piece.valideLe ? (
+              <p className="flex items-center gap-2.5 rounded-xl bg-success-bg px-3 py-2.5 text-sm text-success-ink">
+                Pièce validée le {new Date(piece.valideLe).toLocaleDateString("fr-FR", { timeZone: "Africa/Douala" })}.
+              </p>
+            ) : (
+              piece.aUnFichier && (
+                <p className="flex items-center gap-2.5 rounded-xl bg-success-bg px-3 py-2.5 text-sm text-success-ink">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                  Fichier unique : aucune autre pièce identique dans ce dossier.
+                </p>
+              )
+            )}
           </section>
 
           <EditeurEcriture
             key={piece.id}
             pieceId={piece.id}
             dossierId={dossier.id}
-            statut={piece.statut}
+            suivanteId={suivanteId}
             journal={ecriture.journal}
             lignesInitiales={ecriture.lignes}
-            suivanteId={suivanteId}
+            proposee={ecriture.proposee}
+            modifiable={modifiable}
+            actionsSecondaires={
+              <RenvoyerPiece pieceId={piece.id} dossierId={dossier.id} suivanteId={suivanteId} />
+            }
           />
-           {piece.statut === "RECUE" && (
-            <RenvoyerPiece pieceId={piece.id} dossierId={dossier.id} suivanteId={suivanteId} />
+
+          {modifiable && aValider.length > 1 && (
+            <p className="text-[13px] text-muted">
+              Encore {aValider.length - 1} autre{aValider.length > 2 ? "s" : ""} pièce
+              {aValider.length > 2 ? "s" : ""} à valider dans ce dossier.
+            </p>
           )}
         </div>
       </div>
-    </>
+    </CadreCabinet>
   );
 }
 
 export default function PagePiece({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <main className="mx-auto max-w-6xl p-6">
-      <Suspense fallback={<p className="text-muted">Chargement de la pièce…</p>}>
-        <ContenuPiece params={params} />
-      </Suspense>
-    </main>
+    <Suspense fallback={<p className="p-6 text-muted">Chargement de la pièce…</p>}>
+      <ContenuPiece params={params} />
+    </Suspense>
   );
 }
