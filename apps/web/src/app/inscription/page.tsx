@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CadreAccueil } from "@/components/cadre-accueil";
 import { FormulaireInscription } from "./formulaire";
 
 export const metadata: Metadata = {
@@ -8,23 +9,20 @@ export const metadata: Metadata = {
 
 export default function PageInscription() {
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-heading">Créer le compte de ton cabinet</h1>
-        <p className="text-muted">
-          Tu pourras ensuite ajouter tes dossiers clients et inviter les entreprises à envoyer
-          leurs pièces depuis leur téléphone.
-        </p>
-      </div>
+    <CadreAccueil titre="Créer le compte de ton cabinet">
+      <p className="text-[15px] leading-[22px] text-muted">
+        Tu pourras ensuite créer tes dossiers clients et inviter les entreprises à envoyer leurs
+        pièces depuis leur téléphone.
+      </p>
 
       <FormulaireInscription />
 
       <p className="text-center text-sm text-muted">
         Déjà un compte ?{" "}
-        <Link href="/connexion" className="font-bold text-heading underline">
+        <Link href="/connexion" className="font-bold text-link underline">
           Se connecter
         </Link>
       </p>
-    </main>
+    </CadreAccueil>
   );
 }

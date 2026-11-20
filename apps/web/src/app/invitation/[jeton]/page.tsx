@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { API_URL } from "@/lib/api";
+import { initiales } from "@/lib/format";
+import { CadreAccueil } from "@/components/cadre-accueil";
 import { accepterInvitation } from "./actions";
 import { FormulaireInvitation } from "./formulaire";
 
@@ -30,53 +32,60 @@ async function ContenuInvitation({ params }: { params: Promise<{ jeton: string }
 
   if (!infos) {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold text-heading">Ce lien n&apos;est plus valable</h1>
-        <p className="text-muted">
+      <CadreAccueil titre="Ce lien n'est plus valable">
+        <p className="text-[15px] leading-[22px] text-muted">
           Il a peut-être expiré, été annulé ou déjà été utilisé. Demandez un nouveau lien à votre
-          cabinet comptable.
+          cabinet comptable : il peut le renouveler en un clic.
         </p>
-        <Link href="/connexion" className="font-bold text-heading underline">
+        <Link
+          href="/connexion"
+          className="flex h-[52px] items-center justify-center rounded-xl border border-line-strong bg-surface text-base font-bold text-ink"
+        >
           J&apos;ai déjà un accès : me connecter
         </Link>
-      </div>
+      </CadreAccueil>
     );
   }
 
+  const pme = infos.role === "PME" && infos.dossier;
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-heading">Bienvenue, {infos.nom}</h1>
-        <p className="text-muted">
-          <strong className="text-ink">{infos.cabinet}</strong>{" "}
-          {infos.role === "PME" && infos.dossier
-            ? `vous invite à envoyer les pièces comptables de ${infos.dossier} depuis votre téléphone.`
-            : "vous invite à rejoindre son équipe sur Marly."}
-        </p>
+    <CadreAccueil titre={`Bienvenue, ${infos.nom}`}>
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-info-bg text-sm font-bold text-info-ink">
+          {initiales(pme ? (infos.dossier ?? infos.cabinet) : infos.cabinet)}
+        </span>
+        <span className="text-[15px] leading-[21px]">
+          <strong>{infos.cabinet}</strong>{" "}
+          {pme ? (
+            <>
+              vous invite à envoyer les pièces de <strong>{infos.dossier}</strong> depuis votre téléphone.
+            </>
+          ) : (
+            "vous invite à rejoindre son équipe sur Marly."
+          )}
+        </span>
       </div>
-      <FormulaireInvitation
-        action={accepterInvitation.bind(null, jeton)}
-        emailInitial={infos.email ?? ""}
-      />
-      <p className="text-center text-xs text-muted">
+
+      <FormulaireInvitation action={accepterInvitation.bind(null, jeton)} emailInitial={infos.email ?? ""} />
+
+      <p className="mt-auto text-center text-[13px] leading-[19px] text-muted">
         Lien valable jusqu&apos;au{" "}
         {new Date(infos.expireLe).toLocaleDateString("fr-FR", {
           day: "numeric",
           month: "long",
           timeZone: "Africa/Douala",
         })}
-        .
+        .{pme ? " Vos pièces ne sont visibles que par vous et votre cabinet." : ""}
       </p>
-    </div>
+    </CadreAccueil>
   );
 }
 
 export default function PageInvitation({ params }: { params: Promise<{ jeton: string }> }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-6">
-      <Suspense fallback={<p className="text-muted">Vérification du lien…</p>}>
-        <ContenuInvitation params={params} />
-      </Suspense>
-    </main>
+    <Suspense fallback={<p className="p-6 text-muted">Vérification du lien…</p>}>
+      <ContenuInvitation params={params} />
+    </Suspense>
   );
 }

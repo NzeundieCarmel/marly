@@ -62,7 +62,7 @@ export function FormulaireConnexion() {
       <button
         type="submit"
         disabled={enCours}
-        className="h-12 rounded-xl bg-action font-bold text-white disabled:opacity-60"
+         className="mt-2 h-[52px] rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover disabled:opacity-60"
       >
         {enCours ? "Connexion…" : "Se connecter"}
       </button>

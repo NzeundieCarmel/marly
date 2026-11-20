@@ -1,38 +1,30 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { CadreAccueil } from "@/components/cadre-accueil";
 import { FormulaireConnexion } from "./formulaire";
 
 export default function PageConnexion() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-8">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden="true">
-            <rect width="64" height="64" rx="16" fill="#10294A" />
-            <path
-              d="M16 46V31a8 8 0 0 1 16 0v15M32 31a8 8 0 0 1 16 0v15"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="50" cy="15" r="5" fill="#2BB673" />
-          </svg>
-          <h1 className="text-2xl font-bold text-heading">Connexion à Marly</h1>
-          <p className="text-sm text-muted">Comptabilité connectée</p>
-        </div>
+    <CadreAccueil titre="Connexion à Marly">
+      <p className="text-[15px] leading-[22px] text-muted">
+        Les pièces comptables, du téléphone de la PME au cabinet.
+      </p>
 
-        <Suspense fallback={null}>
-          <FormulaireConnexion />
-        </Suspense>
-      </div>
-      <p className="mt-6 text-center text-sm text-muted">
+      <Suspense fallback={null}>
+        <FormulaireConnexion />
+      </Suspense>
+
+      <p className="text-center text-sm text-muted">
         Nouveau cabinet ?{" "}
-        <Link href="/inscription" className="font-bold text-heading underline">
+        <Link href="/inscription" className="font-bold text-link underline">
           Créer un compte
         </Link>
       </p>
-    </main>
+
+      <p className="mt-auto text-center text-[13px] leading-[19px] text-muted">
+        Vous êtes une entreprise ? Votre accès se crée avec le lien d&apos;invitation envoyé par
+        votre cabinet comptable.
+      </p>
+    </CadreAccueil>
   );
 }
