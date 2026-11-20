@@ -1,24 +1,39 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { CadreCabinet } from "@/components/cadre-cabinet";
 import { creerDossier } from "../actions";
 import { FormulaireDossier } from "../formulaire-dossier";
 
+function ContenuNouveau() {
+  return (
+    <CadreCabinet actif="dossiers">
+      <nav aria-label="Fil d'Ariane" className="flex flex-wrap gap-2 text-sm text-muted">
+        <Link href="/dossiers" className="underline">Dossiers clients</Link>
+        <span aria-hidden="true">›</span>
+        <span>Nouveau dossier</span>
+      </nav>
+      <div className="flex max-w-2xl flex-col gap-2">
+        <h1 className="text-[28px] font-bold leading-[34px] text-heading">Nouveau dossier client</h1>
+        <p className="text-muted">
+          Un dossier par entreprise suivie. Tu pourras ensuite inviter son gérant à envoyer ses pièces.
+        </p>
+      </div>
+      <div className="max-w-2xl">
+        <FormulaireDossier
+          action={creerDossier}
+          initial={{ raisonSociale: "", regime: "REEL", niu: "", rccm: "" }}
+          libelleBouton="Créer le dossier"
+          annulerVers="/dossiers"
+        />
+      </div>
+    </CadreCabinet>
+  );
+}
+
 export default function PageNouveauDossier() {
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
-        <Link href="/dossiers" className="underline">← Dossiers du cabinet</Link>
-      </nav>
-      <h1 className="mb-2 text-3xl font-bold text-heading">Nouveau dossier client</h1>
-      <p className="mb-6 text-muted">
-        Un dossier par entreprise suivie. Tu pourras ensuite inviter son gérant à envoyer ses
-        pièces.
-      </p>
-      <FormulaireDossier
-        action={creerDossier}
-        initial={{ raisonSociale: "", regime: "REEL", niu: "", rccm: "" }}
-        libelleBouton="Créer le dossier"
-        annulerVers="/dossiers"
-      />
-    </main>
+    <Suspense fallback={<p className="p-6 text-muted">Chargement…</p>}>
+      <ContenuNouveau />
+    </Suspense>
   );
 }

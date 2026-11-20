@@ -13,19 +13,25 @@ import {
   type StatutPiece,
 } from "@/lib/api";
 import { prochaineEcheance, versIsoJour } from "@/lib/echeances";
+import { formatMontant, initiales } from "@/lib/format";
+import { CadreCabinet } from "@/components/cadre-cabinet";
+import { GestionAcces } from "@/components/gestion-acces";
+import { Pastille, type Ton } from "@/components/pastille";
 import { DemandesDossier } from "./demandes-dossier";
 import { ExportSage } from "./export-sage";
-import { GestionAcces } from "@/components/gestion-acces";
 
-const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
-  EN_ATTENTE: { texte: "En attente", classes: "bg-neutral-bg text-muted" },
-  RECUE: { texte: "À valider", classes: "bg-info-bg text-info-ink" },
-  A_COMPLETER: { texte: "À compléter", classes: "bg-warning-bg text-warning-ink" },
-  TRAITEE: { texte: "Validée", classes: "bg-success-bg text-success-ink" },
-  REMPLACEE: { texte: "Remplacée", classes: "bg-neutral-bg text-muted" },
+const STATUTS: Record<StatutPiece, { ton: Ton; texte: string }> = {
+  EN_ATTENTE: { ton: "neutral", texte: "En attente" },
+  RECUE: { ton: "info", texte: "À valider" },
+  A_COMPLETER: { ton: "warning", texte: "À compléter" },
+  TRAITEE: { ton: "success", texte: "Validée" },
+  REMPLACEE: { ton: "neutral", texte: "Remplacée" },
 };
 
-const formatMontant = new Intl.NumberFormat("fr-FR");
+const BOUTON_SECONDAIRE =
+  "inline-flex h-11 items-center rounded-xl border border-line-strong bg-surface px-4 text-[15px] font-medium text-ink hover:bg-survol";
+const BOUTON_PRINCIPAL =
+  "inline-flex h-11 items-center rounded-xl bg-action px-[18px] text-[15px] font-bold text-white hover:bg-action-hover";
 
 async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,37 +56,42 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   const echeanceParDefaut = versIsoJour(prochaineEcheance(new Date()));
 
   return (
-    <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
-        <Link href="/dossiers" className="underline">← Dossiers du cabinet</Link>
+    <CadreCabinet actif="dossiers">
+      <nav aria-label="Fil d'Ariane" className="flex flex-wrap gap-2 text-sm text-muted">
+        <Link href="/dossiers" className="underline">Dossiers clients</Link>
+        <span aria-hidden="true">›</span>
+        <span>{dossier.raisonSociale}</span>
       </nav>
 
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold text-heading">{dossier.raisonSociale}</h1>
-          <span className="text-sm text-muted">
-            {dossier.regime === "REEL" ? "Régime réel" : "IGS"} · {dossier.piecesRecues} pièces ·{" "}
-            {dossier.aValider} à valider
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold ${
+              dossier.regime === "REEL" ? "bg-info-bg text-info-ink" : "bg-neutral-bg text-neutral-ink"
+            }`}
+          >
+            {initiales(dossier.raisonSociale)}
           </span>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] font-bold leading-[34px] text-heading">{dossier.raisonSociale}</h1>
+            <span className="text-sm text-muted">
+              {dossier.regime === "REEL" ? "Régime réel · TVA 19,25 %" : "IGS · sans TVA"} ·{" "}
+              {dossier.piecesRecues} pièce{dossier.piecesRecues > 1 ? "s" : ""} · {dossier.aValider} à valider
+            </span>
+          </div>
         </div>
+        {peutGerer && (
           <div className="flex flex-wrap gap-3">
-          {peutGerer && (
-            <Link
-              href={`/dossiers/${dossier.id}/modifier`}
-              className="flex h-11 items-center rounded-xl border border-line-strong bg-surface px-4 font-medium"
-            >
+            <Link href={`/dossiers/${dossier.id}/modifier`} className={BOUTON_SECONDAIRE}>
               Modifier
             </Link>
-          )}
-        {premiereAValider && peutGerer && (
-          <Link
-            href={`/pieces/${premiereAValider.id}`}
-            className="flex h-11 items-center rounded-xl bg-action px-5 font-bold text-white"
-          >
-            Valider les pièces ({dossier.aValider})
-          </Link>
+            {premiereAValider && (
+              <Link href={`/pieces/${premiereAValider.id}`} className={BOUTON_PRINCIPAL}>
+                Valider les pièces ({dossier.aValider})
+              </Link>
+            )}
+          </div>
         )}
-        </div>
       </header>
 
       <DemandesDossier
@@ -90,7 +101,61 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         peutGerer={peutGerer}
       />
 
-      
+      <section
+        aria-labelledby="titre-pieces"
+        className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-4">
+          <h2 id="titre-pieces" className="text-lg font-bold">Pièces reçues</h2>
+          <span className="text-sm text-muted">{pieces.length} au total</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] border-collapse text-left text-[15px]">
+            <thead>
+              <tr className="text-[13px] text-muted">
+                <th scope="col" className="px-6 py-3 font-medium">Date</th>
+                <th scope="col" className="px-3 py-3 font-medium">Fournisseur</th>
+                <th scope="col" className="px-3 py-3 font-medium">Catégorie</th>
+                <th scope="col" className="px-3 py-3 text-right font-medium">Montant TTC</th>
+                <th scope="col" className="px-3 py-3 font-medium">Statut</th>
+                <th scope="col" className="px-6 py-3"><span className="sr-only">Action</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pieces.map((p) => (
+                <tr key={p.id} className="border-t border-line hover:bg-survol">
+                  <td className="px-6 py-3.5 tabular-nums">
+                    {new Date(p.date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}
+                  </td>
+                  <td className="px-3 py-3.5 font-medium">{p.fournisseur ?? "Non précisé"}</td>
+                  <td className="px-3 py-3.5 text-muted">{p.categorie}</td>
+                  <td className="px-3 py-3.5 text-right tabular-nums">{formatMontant(p.montantTtc)} FCFA</td>
+                  <td className="px-3 py-3.5">
+                    <Pastille ton={STATUTS[p.statut].ton}>{STATUTS[p.statut].texte}</Pastille>
+                  </td>
+                  <td className="px-6 py-3.5 text-right">
+                    {peutGerer && (
+                      <Link href={`/pieces/${p.id}`} className="font-bold text-link underline underline-offset-[3px]">
+                        {p.statut === "RECUE" ? "Valider" : "Voir"}
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {pieces.length === 0 && (
+                <tr className="border-t border-line">
+                  <td colSpan={6} className="px-6 py-6 text-muted">
+                    Aucune pièce pour l&apos;instant. Invite le gérant ci-dessous pour qu&apos;il envoie ses pièces.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {peutGerer && <ExportSage dossierId={dossier.id} apercu={apercuExport} lots={lotsExport} />}
+
       <GestionAcces
         titre="Accès de l'entreprise"
         role="PME"
@@ -101,57 +166,14 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         invitations={acces.invitations}
         peutInviter={peutGerer}
       />
-
-      {peutGerer && (
-        <ExportSage dossierId={dossier.id} apercu={apercuExport} lots={lotsExport} />
-      )}
-
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
-        <table className="w-full min-w-[640px] border-collapse text-left">
-          <thead>
-            <tr className="text-sm text-muted">
-              <th className="px-5 py-3 font-medium">Date</th>
-              <th className="px-3 py-3 font-medium">Fournisseur</th>
-              <th className="px-3 py-3 font-medium">Catégorie</th>
-              <th className="px-3 py-3 text-right font-medium">Montant TTC</th>
-              <th className="px-3 py-3 font-medium">Statut</th>
-              <th className="px-5 py-3"><span className="sr-only">Action</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {pieces.map((p) => (
-              <tr key={p.id} className="border-t border-line">
-                <td className="px-5 py-4">{new Date(p.date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}</td>
-                <td className="px-3 py-4 font-medium">{p.fournisseur ?? "Non précisé"}</td>
-                <td className="px-3 py-4">{p.categorie}</td>
-                <td className="px-3 py-4 text-right tabular-nums">{formatMontant.format(p.montantTtc)} FCFA</td>
-                <td className="px-3 py-4">
-                  <span className={`rounded-full px-3 py-1 text-sm font-medium ${LIBELLES[p.statut].classes}`}>
-                    {LIBELLES[p.statut].texte}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-right">
-                  {peutGerer && (
-                    <Link href={`/pieces/${p.id}`} className="font-bold text-heading underline">
-                      {p.statut === "RECUE" ? "Valider" : "Voir"}
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+    </CadreCabinet>
   );
 }
 
 export default function PageDossier({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <Suspense fallback={<p className="text-muted">Chargement du dossier…</p>}>
-        <ContenuDossier params={params} />
-      </Suspense>
-    </main>
+    <Suspense fallback={<p className="p-6 text-muted">Chargement du dossier…</p>}>
+      <ContenuDossier params={params} />
+    </Suspense>
   );
 }

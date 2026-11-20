@@ -1,36 +1,36 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { lireAcces, lireProfil } from "@/lib/api";
+import { CadreCabinet } from "@/components/cadre-cabinet";
 import { GestionAcces } from "@/components/gestion-acces";
 
 async function ContenuEquipe() {
   const [profil, acces] = await Promise.all([lireProfil(), lireAcces()]);
 
   return (
-    <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
-        <Link href="/dossiers" className="underline">← Dossiers du cabinet</Link>
-      </nav>
-      <h1 className="mb-6 text-3xl font-bold text-heading">Équipe de {profil.cabinet}</h1>
-      <GestionAcces
-        titre="Collaborateurs"
-        role="COMPTABLE"
-        dossierId={null}
-        nomCabinet={profil.cabinet}
-        membres={acces.membres}
-        invitations={acces.invitations}
-        peutInviter={profil.role === "RESPONSABLE"}
-      />
-    </>
+    <CadreCabinet actif="equipe">
+      <div className="flex flex-col gap-1">
+        <span className="text-sm text-muted">{profil.cabinet}</span>
+        <h1 className="text-[28px] font-bold leading-[34px] text-heading">Équipe du cabinet</h1>
+      </div>
+      <div className="max-w-3xl">
+        <GestionAcces
+          titre="Collaborateurs"
+          role="COMPTABLE"
+          dossierId={null}
+          nomCabinet={profil.cabinet}
+          membres={acces.membres}
+          invitations={acces.invitations}
+          peutInviter={profil.role === "RESPONSABLE"}
+        />
+      </div>
+    </CadreCabinet>
   );
 }
 
 export default function PageEquipe() {
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <Suspense fallback={<p className="text-muted">Chargement de l&apos;équipe…</p>}>
-        <ContenuEquipe />
-      </Suspense>
-    </main>
+    <Suspense fallback={<p className="p-6 text-muted">Chargement de l&apos;équipe…</p>}>
+      <ContenuEquipe />
+    </Suspense>
   );
 }
