@@ -120,6 +120,7 @@
   --color-accent-500: var(--accent-500);
   --color-accent-700: var(--accent-700);
   --color-accent-100: var(--accent-100);
+  --color-identity: var(--identity);
   --color-nav: var(--nav);
   --color-nav-ink: var(--nav-ink);
   --color-nav-active: var(--nav-active);

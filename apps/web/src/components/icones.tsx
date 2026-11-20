@@ -110,3 +110,77 @@ export function Monogramme({ taille = 36, inverse = false }: { taille?: number; 
     </svg>
   );
 }
+
+
+export function IconeAppareil(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </Trait>
+  );
+}
+
+export function IconePiece(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8M8 17h5" />
+    </Trait>
+  );
+}
+
+export function IconeProfil(props: Props) {
+  return (
+    <Trait {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </Trait>
+  );
+}
+
+export function IconeHorloge(props: Props) {
+  return (
+    <Trait {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </Trait>
+  );
+}
+
+export function IconeCheck(props: Props) {
+  return (
+    <Trait strokeWidth={2.4} {...props}>
+      <path d="M20 6L9 17l-5-5" />
+    </Trait>
+  );
+}
+
+export function IconeHorsLigne(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M2 8.8a15 15 0 0 1 20 0" />
+      <path d="M5 12.5a10 10 0 0 1 14 0" />
+      <path d="M8.5 16a5 5 0 0 1 7 0" />
+      <path d="M3 3l18 18" />
+    </Trait>
+  );
+}
+
+export function IconeRetour(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M15 18l-6-6 6-6" />
+    </Trait>
+  );
+}
+
+export function IconeEnvoyer(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4z" />
+    </Trait>
+  );
+}
