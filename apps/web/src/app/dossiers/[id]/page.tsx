@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import {
+  lireAcces,
   lireApercuExport,
   lireProfil,
   listerDemandes,
@@ -14,6 +15,7 @@ import {
 import { prochaineEcheance, versIsoJour } from "@/lib/echeances";
 import { DemandesDossier } from "./demandes-dossier";
 import { ExportSage } from "./export-sage";
+import { GestionAcces } from "@/components/gestion-acces";
 
 const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
   EN_ATTENTE: { texte: "En attente", classes: "bg-[#EEF1F5] text-marly-gris" },
@@ -27,13 +29,14 @@ const formatMontant = new Intl.NumberFormat("fr-FR");
 
 async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [profil, dossiers, pieces, demandes, apercuExport, lotsExport] = await Promise.all([
+  const [profil, dossiers, pieces, demandes, apercuExport, lotsExport, acces] = await Promise.all([
     lireProfil(),
     listerDossiers(),
     listerPieces(id),
     listerDemandes(id),
     lireApercuExport(id),
     listerExports(id),
+    lireAcces(id),
   ]);
   const dossier = dossiers.find((d) => d.id === id);
   if (!dossier) {
@@ -85,6 +88,18 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         demandes={demandes}
         echeanceParDefaut={echeanceParDefaut}
         peutGerer={peutGerer}
+      />
+
+      
+      <GestionAcces
+        titre="Accès de l'entreprise"
+        role="PME"
+        dossierId={dossier.id}
+        nomCabinet={profil.cabinet}
+        nomDossier={dossier.raisonSociale}
+        membres={acces.membres}
+        invitations={acces.invitations}
+        peutInviter={peutGerer}
       />
 
       {peutGerer && (

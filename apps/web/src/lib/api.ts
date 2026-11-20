@@ -161,3 +161,36 @@ export interface FicheDossier {
 export function lireDossier(dossierId: string): Promise<FicheDossier> {
   return appelerApi<FicheDossier>(`/dossiers/${encodeURIComponent(dossierId)}`);
 }
+
+
+export interface Membre {
+  id: string;
+  nom: string;
+  email: string | null;
+  role: RoleMarly;
+}
+
+export interface ResumeInvitation {
+  id: string;
+  role: RoleMarly;
+  nom: string;
+  telephone: string | null;
+  email: string | null;
+  statut: "EN_ATTENTE" | "ACCEPTEE" | "ANNULEE";
+  expiree: boolean;
+  expireLe: string;
+  creeLe: string;
+  accepteeLe: string | null;
+  dossierId: string | null;
+}
+
+export interface Acces {
+  membres: Membre[];
+  invitations: ResumeInvitation[];
+}
+
+// Avec un dossier : le gérant et ses invitations. Sans : l'équipe du cabinet
+export function lireAcces(dossierId?: string): Promise<Acces> {
+  const filtre = dossierId ? `?dossierId=${encodeURIComponent(dossierId)}` : "";
+  return appelerApi<Acces>(`/invitations${filtre}`);
+}

@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { InvitationsController } from '../invitations/invitations.controller';
+import { InvitationsService } from '../invitations/invitations.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
 import { InscriptionController } from './inscription.controller';
 import { InscriptionService } from './inscription.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
   imports: [
@@ -20,10 +22,11 @@ import { InscriptionService } from './inscription.service';
       }),
     }),
   ],
-  controllers: [AuthController, InscriptionController],
+  controllers: [AuthController, InscriptionController, InvitationsController],
   providers: [
     AuthService,
     InscriptionService,
+    InvitationsService,
     // Toutes les routes exigent un jeton, sauf celles marquées @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

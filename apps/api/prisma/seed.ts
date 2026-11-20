@@ -24,6 +24,7 @@ const pieces = [
 
 async function main(): Promise<void> {
   // Ordre de suppression : des tables qui dépendent vers celles dont on dépend
+  await prisma.invitation.deleteMany();
   await prisma.lotExport.deleteMany();
   await prisma.demandePiece.deleteMany();
   await prisma.piece.deleteMany();

@@ -33,6 +33,12 @@ enum StatutDemande {
   ANNULEE
 }
 
+enum StatutInvitation {
+  EN_ATTENTE
+  ACCEPTEE
+  ANNULEE
+}
+
 model Cabinet {
   id           String        @id @default(cuid())
   nom          String
@@ -40,6 +46,7 @@ model Cabinet {
   creeLe       DateTime      @default(now())
   utilisateurs Utilisateur[]
   dossiers     Dossier[]
+  invitations  Invitation[]
 }
 
 model Utilisateur {
@@ -56,6 +63,7 @@ model Utilisateur {
   piecesValidees  Piece[]        @relation("PiecesValidees")
   demandesCreees  DemandePiece[]
   lotsExport      LotExport[]
+  invitationsCreees Invitation[]
   creeLe          DateTime       @default(now())
 }
 
@@ -71,6 +79,7 @@ model Dossier {
   pieces        Piece[]
   demandes      DemandePiece[]
   lotsExport    LotExport[]
+  invitations   Invitation[]
   utilisateurs  Utilisateur[]
   creeLe        DateTime       @default(now())
 }
@@ -147,4 +156,26 @@ model LotExport {
   creeLe      DateTime    @default(now())
 
   @@index([dossierId, creeLe])
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  cabinet    Cabinet          @relation(fields: [cabinetId], references: [id])
+  cabinetId  String
+  dossier    Dossier?         @relation(fields: [dossierId], references: [id])
+  dossierId  String?
+  role       Role
+  nom        String
+  telephone  String?
+  email      String?
+  jetonHache String           @unique
+  expireLe   DateTime
+  statut     StatutInvitation @default(EN_ATTENTE)
+  creePar    Utilisateur      @relation(fields: [creeParId], references: [id])
+  creeParId  String
+  creeLe     DateTime         @default(now())
+  accepteeLe DateTime?
+
+  @@index([cabinetId, statut])
+  @@index([dossierId, statut])
 }

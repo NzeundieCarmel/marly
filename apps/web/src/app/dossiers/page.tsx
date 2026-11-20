@@ -88,6 +88,14 @@ async function ContenuDossiers() {
           <h1 className="text-3xl font-bold text-marly-bleu">Bonjour, {profil.nom}</h1>
         </div>
         <div className="flex flex-wrap gap-3">
+          {profil.role === "RESPONSABLE" && (
+            <Link
+              href="/equipe"
+              className="flex h-11 items-center rounded-xl border border-marly-bord bg-white px-4 font-medium"
+            >
+              Équipe
+            </Link>
+          )}
           {dossiers.length > 0 && (
             <Link href="/dossiers/nouveau" className={CLASSES_BOUTON}>
               Nouveau dossier
