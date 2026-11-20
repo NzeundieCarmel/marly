@@ -40,6 +40,10 @@
   --danger-ink: #A12A2A;
   --neutral-bg: #EEF1F5;
   --neutral-ink: #4E5867;
+  --nav: #10294A;
+  --nav-ink: #D6DEEA;
+  --nav-active: #1F3D66;
+  --nav-line: #2A4A75;
   --identity: #10294A;
 }
 
@@ -71,6 +75,10 @@
     --danger-ink: #F49A9A;
     --neutral-bg: #1E2A3D;
     --neutral-ink: #A3AEC0;
+    --nav: #0B1320;
+    --nav-ink: #C9D3E2;
+    --nav-active: #1B2A42;
+    --nav-line: #26354D;
     --identity: #2A5590;
   }
 }
@@ -112,6 +120,10 @@
   --color-accent-500: var(--accent-500);
   --color-accent-700: var(--accent-700);
   --color-accent-100: var(--accent-100);
+  --color-nav: var(--nav);
+  --color-nav-ink: var(--nav-ink);
+  --color-nav-active: var(--nav-active);
+  --color-nav-line: var(--nav-line);
 
   /* Anciens noms, gardes le temps de la migration */
   --color-marly-bleu: var(--brand-800);

@@ -8,6 +8,7 @@ import { ExportsModule } from './exports/exports.module';
 import { DossiersModule } from './dossiers/dossiers.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SanteModule } from './sante/sante.module';
+import { TableauDeBordModule } from './tableau-de-bord/tableau-de-bord.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SanteModule } from './sante/sante.module';
     DossiersModule,
     ComptabiliteModule,
     ExportsModule,
+    TableauDeBordModule,
   ],
   controllers: [AppController],
   providers: [AppService],

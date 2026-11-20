@@ -194,3 +194,47 @@ export function lireAcces(dossierId?: string): Promise<Acces> {
   const filtre = dossierId ? `?dossierId=${encodeURIComponent(dossierId)}` : "";
   return appelerApi<Acces>(`/invitations${filtre}`);
 }
+
+
+export interface LigneTableau {
+  id: string;
+  raisonSociale: string;
+  regime: Regime;
+  recues: number;
+  demandees: number;
+  attendues: number;
+  aValider: number;
+  aCompleter: number;
+  pretesExport: number;
+  derniereLe: string | null;
+  premiereAValiderId: string | null;
+}
+
+export interface Activite {
+  type: "piece" | "demande" | "acces" | "export";
+  le: string;
+  titre: string;
+  dossierId: string | null;
+  dossier: string | null;
+}
+
+export interface TableauDeBord {
+  stats: {
+    recues: number;
+    recuesSemaine: number;
+    aValider: number;
+    dossiersAValider: number;
+    demandees: number;
+    aReprendre: number;
+    exportees: number;
+    dernierExport: string | null;
+  };
+  export: { pieces: number; debit: number; credit: number };
+  premiereAValiderId: string | null;
+  dossiers: LigneTableau[];
+  activite: Activite[];
+}
+
+export function lireTableauDeBord(): Promise<TableauDeBord> {
+  return appelerApi<TableauDeBord>("/tableau-de-bord");
+}
