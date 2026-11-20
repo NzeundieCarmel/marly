@@ -224,13 +224,13 @@ export function FormulaireEnvoi({
       {demandes.length > 0 && (
         <section
           aria-labelledby="titre-attente-cabinet"
-          className="flex flex-col gap-3 rounded-2xl border border-[#F0C97A] bg-white p-4"
+          className="flex flex-col gap-3 rounded-2xl border border-warning-line bg-surface p-4"
         >
           <div className="flex flex-col gap-0.5">
             <h2 id="titre-attente-cabinet" className="font-bold">
               Votre cabinet attend {pluriel(demandes.length, "pièce")}
             </h2>
-            <span className="text-sm text-marly-gris">
+            <span className="text-sm text-muted">
               À envoyer avant le {formatDate(demandes[0].echeance)}
             </span>
           </div>
@@ -238,13 +238,13 @@ export function FormulaireEnvoi({
             {demandes.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between gap-3 border-t border-[#F6F0E4] py-2 first:border-t-0"
+                className="flex items-center justify-between gap-3 border-t border-line py-2 first:border-t-0"
               >
                 <span className="text-sm">{d.description}</span>
                 <button
                   type="button"
                   onClick={() => repondreA(d)}
-                  className="h-10 shrink-0 rounded-full bg-marly-bleu px-4 text-sm font-bold text-white"
+                  className="h-10 shrink-0 rounded-full bg-action px-4 text-sm font-bold text-white"
                 >
                   Envoyer
                 </button>
@@ -258,7 +258,7 @@ export function FormulaireEnvoi({
         {enAttente > 0 && (
           <div
             role="status"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#FFF2DB] p-3 text-sm text-[#7A4A00]"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warning-bg p-3 text-sm text-warning-ink"
           >
             <span>
               <strong>{pluriel(enAttente, "pièce")} en attente d&apos;envoi.</strong>{" "}
@@ -267,7 +267,7 @@ export function FormulaireEnvoi({
             <button
               type="button"
               onClick={envoyerMaintenant}
-              className="h-10 rounded-lg bg-[#7A4A00] px-3 font-bold text-white"
+              className="h-10 rounded-lg bg-warning-ink px-3 font-bold text-warning-bg"
             >
               Envoyer maintenant
             </button>
@@ -279,8 +279,8 @@ export function FormulaireEnvoi({
             role={message.type === "erreur" ? "alert" : "status"}
             className={
               message.type === "erreur"
-                ? "rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]"
-                : "rounded-xl bg-[#E3F5EC] p-3 text-sm text-[#11734B]"
+                ? "rounded-xl bg-danger-bg p-3 text-sm text-danger-ink"
+                : "rounded-xl bg-success-bg p-3 text-sm text-success-ink"
             }
           >
             {message.texte}
@@ -288,7 +288,7 @@ export function FormulaireEnvoi({
         )}
 
         {demandeChoisie && (
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#E6EEF9] p-3 text-sm text-[#1D4F91]">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-info-bg p-3 text-sm text-info-ink">
             <span>
               En réponse à : <strong>{demandeChoisie.description}</strong>
             </span>
@@ -303,20 +303,20 @@ export function FormulaireEnvoi({
         )}
 
         {/* Le vrai champ fichier recouvre toute la zone : le doigt le touche directement */}
-        <div className="relative flex min-h-48 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-marly-bord bg-white p-4 text-center focus-within:border-marly-bleu">
+        <div className="relative flex min-h-48 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-line bg-surface p-4 text-center focus-within:border-action">
           {apercu ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={apercu} alt="Aperçu de la pièce" className="max-h-56 rounded-lg object-contain" />
           ) : (
             <>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10294A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                 <circle cx="12" cy="13" r="4" />
               </svg>
-              <span className="font-bold text-marly-bleu">
+              <span className="font-bold text-heading">
                 {nomFichier ?? "Prendre une photo ou choisir un PDF"}
               </span>
-              <span className="text-sm text-marly-gris">JPG, PNG ou PDF, 10 Mo maximum</span>
+              <span className="text-sm text-muted">JPG, PNG ou PDF, 10 Mo maximum</span>
             </>
           )}
           <input
@@ -332,18 +332,18 @@ export function FormulaireEnvoi({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="date" className="text-sm font-medium text-marly-gris">Date</label>
+            <label htmlFor="date" className="text-sm font-medium text-muted">Date</label>
             <input
               id="date"
               name="date"
               type="date"
               required
               defaultValue={aujourdhui()}
-              className="h-12 rounded-xl border border-marly-bord bg-white px-3"
+              className="h-12 rounded-xl border border-line-strong bg-surface px-3"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="montantTtc" className="text-sm font-medium text-marly-gris">
+            <label htmlFor="montantTtc" className="text-sm font-medium text-muted">
               Montant TTC (FCFA)
             </label>
             <input
@@ -353,13 +353,13 @@ export function FormulaireEnvoi({
               inputMode="numeric"
               pattern="[0-9]*"
               required
-              className="h-12 rounded-xl border border-marly-bord bg-white px-3"
+              className="h-12 rounded-xl border border-line-strong bg-surface px-3"
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="fournisseur" className="text-sm font-medium text-marly-gris">
+          <label htmlFor="fournisseur" className="text-sm font-medium text-muted">
             Fournisseur (facultatif)
           </label>
           <input
@@ -367,12 +367,12 @@ export function FormulaireEnvoi({
             name="fournisseur"
             type="text"
             maxLength={120}
-            className="h-12 rounded-xl border border-marly-bord bg-white px-3"
+            className="h-12 rounded-xl border border-line-strong bg-surface px-3"
           />
         </div>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-medium text-marly-gris">Catégorie</legend>
+          <legend className="mb-2 text-sm font-medium text-muted">Catégorie</legend>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -382,8 +382,8 @@ export function FormulaireEnvoi({
                 onClick={() => setCategorie(c)}
                 className={
                   categorie === c
-                    ? "h-10 rounded-full border border-marly-bleu bg-marly-bleu px-4 text-sm font-medium text-white"
-                    : "h-10 rounded-full border border-marly-bord bg-white px-4 text-sm"
+                    ? "h-10 rounded-full border border-action bg-action px-4 text-sm font-medium text-white"
+                    : "h-10 rounded-full border border-line-strong bg-surface px-4 text-sm"
                 }
               >
                 {c}
@@ -395,7 +395,7 @@ export function FormulaireEnvoi({
         <button
           type="submit"
           disabled={envoiEnCours}
-          className="mt-2 h-13 rounded-xl bg-marly-bleu text-base font-bold text-white disabled:opacity-60"
+          className="mt-2 h-13 rounded-xl bg-action text-base font-bold text-white disabled:opacity-60"
         >
           {envoiEnCours ? "Envoi en cours…" : "Envoyer au cabinet"}
         </button>

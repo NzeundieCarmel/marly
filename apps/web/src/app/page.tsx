@@ -16,11 +16,11 @@ export default function Accueil() {
           />
           <circle cx="50" cy="15" r="5" fill="#2BB673" />
         </svg>
-        <h1 className="text-4xl font-bold text-marly-bleu">Marly</h1>
-        <p className="text-lg text-marly-gris">Comptabilité connectée</p>
+        <h1 className="text-4xl font-bold text-heading">Marly</h1>
+        <p className="text-lg text-muted">Comptabilité connectée</p>
         <Link
           href="/dossiers"
-          className="mt-2 flex h-12 items-center rounded-xl bg-marly-bleu px-6 font-bold text-white"
+          className="mt-2 flex h-12 items-center rounded-xl bg-action px-6 font-bold text-white"
         >
           Voir les dossiers du cabinet
         </Link>

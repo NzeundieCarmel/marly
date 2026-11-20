@@ -17,7 +17,7 @@ function Champ({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-marly-gris">
+      <label htmlFor={id} className="text-sm font-medium text-muted">
         {libelle}
       </label>
       <input
@@ -25,11 +25,11 @@ function Champ({
         name={id}
         required
         aria-describedby={aide ? `${id}-aide` : undefined}
-        className="h-12 rounded-xl border border-marly-bord bg-white px-3"
+        className="h-12 rounded-xl border border-line-strong bg-surface px-3"
         {...attributs}
       />
       {aide && (
-        <span id={`${id}-aide`} className="text-xs text-marly-gris">
+        <span id={`${id}-aide`} className="text-xs text-muted">
           {aide}
         </span>
       )}
@@ -43,7 +43,7 @@ export function FormulaireInscription() {
   return (
     <form action={action} className="flex flex-col gap-4">
       {etat.erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {etat.erreur}
         </p>
       )}
@@ -97,7 +97,7 @@ export function FormulaireInscription() {
       <button
         type="submit"
         disabled={enCours}
-        className="mt-2 h-12 rounded-xl bg-marly-bleu font-bold text-white disabled:opacity-60"
+        className="mt-2 h-12 rounded-xl bg-action font-bold text-white disabled:opacity-60"
       >
         {enCours ? "Création du compte…" : "Créer le compte du cabinet"}
       </button>

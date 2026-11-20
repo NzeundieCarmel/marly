@@ -31,12 +31,12 @@ async function ContenuInvitation({ params }: { params: Promise<{ jeton: string }
   if (!infos) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold text-marly-bleu">Ce lien n&apos;est plus valable</h1>
-        <p className="text-marly-gris">
+        <h1 className="text-2xl font-bold text-heading">Ce lien n&apos;est plus valable</h1>
+        <p className="text-muted">
           Il a peut-être expiré, été annulé ou déjà été utilisé. Demandez un nouveau lien à votre
           cabinet comptable.
         </p>
-        <Link href="/connexion" className="font-bold text-marly-bleu underline">
+        <Link href="/connexion" className="font-bold text-heading underline">
           J&apos;ai déjà un accès : me connecter
         </Link>
       </div>
@@ -46,9 +46,9 @@ async function ContenuInvitation({ params }: { params: Promise<{ jeton: string }
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-marly-bleu">Bienvenue, {infos.nom}</h1>
-        <p className="text-marly-gris">
-          <strong className="text-marly-texte">{infos.cabinet}</strong>{" "}
+        <h1 className="text-3xl font-bold text-heading">Bienvenue, {infos.nom}</h1>
+        <p className="text-muted">
+          <strong className="text-ink">{infos.cabinet}</strong>{" "}
           {infos.role === "PME" && infos.dossier
             ? `vous invite à envoyer les pièces comptables de ${infos.dossier} depuis votre téléphone.`
             : "vous invite à rejoindre son équipe sur Marly."}
@@ -58,7 +58,7 @@ async function ContenuInvitation({ params }: { params: Promise<{ jeton: string }
         action={accepterInvitation.bind(null, jeton)}
         emailInitial={infos.email ?? ""}
       />
-      <p className="text-center text-xs text-marly-gris">
+      <p className="text-center text-xs text-muted">
         Lien valable jusqu&apos;au{" "}
         {new Date(infos.expireLe).toLocaleDateString("fr-FR", {
           day: "numeric",
@@ -74,7 +74,7 @@ async function ContenuInvitation({ params }: { params: Promise<{ jeton: string }
 export default function PageInvitation({ params }: { params: Promise<{ jeton: string }> }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-6">
-      <Suspense fallback={<p className="text-marly-gris">Vérification du lien…</p>}>
+      <Suspense fallback={<p className="text-muted">Vérification du lien…</p>}>
         <ContenuInvitation params={params} />
       </Suspense>
     </main>

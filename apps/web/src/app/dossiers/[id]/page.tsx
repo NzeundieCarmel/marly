@@ -18,11 +18,11 @@ import { ExportSage } from "./export-sage";
 import { GestionAcces } from "@/components/gestion-acces";
 
 const LIBELLES: Record<StatutPiece, { texte: string; classes: string }> = {
-  EN_ATTENTE: { texte: "En attente", classes: "bg-[#EEF1F5] text-marly-gris" },
-  RECUE: { texte: "À valider", classes: "bg-[#E6EEF9] text-[#1D4F91]" },
-  A_COMPLETER: { texte: "À compléter", classes: "bg-[#FFF2DB] text-[#7A4A00]" },
-  TRAITEE: { texte: "Validée", classes: "bg-[#E3F5EC] text-[#11734B]" },
-  REMPLACEE: { texte: "Remplacée", classes: "bg-[#EEF1F5] text-marly-gris" },
+  EN_ATTENTE: { texte: "En attente", classes: "bg-neutral-bg text-muted" },
+  RECUE: { texte: "À valider", classes: "bg-info-bg text-info-ink" },
+  A_COMPLETER: { texte: "À compléter", classes: "bg-warning-bg text-warning-ink" },
+  TRAITEE: { texte: "Validée", classes: "bg-success-bg text-success-ink" },
+  REMPLACEE: { texte: "Remplacée", classes: "bg-neutral-bg text-muted" },
 };
 
 const formatMontant = new Intl.NumberFormat("fr-FR");
@@ -51,14 +51,14 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-marly-gris">
+      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
         <Link href="/dossiers" className="underline">← Dossiers du cabinet</Link>
       </nav>
 
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold text-marly-bleu">{dossier.raisonSociale}</h1>
-          <span className="text-sm text-marly-gris">
+          <h1 className="text-3xl font-bold text-heading">{dossier.raisonSociale}</h1>
+          <span className="text-sm text-muted">
             {dossier.regime === "REEL" ? "Régime réel" : "IGS"} · {dossier.piecesRecues} pièces ·{" "}
             {dossier.aValider} à valider
           </span>
@@ -67,7 +67,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
           {peutGerer && (
             <Link
               href={`/dossiers/${dossier.id}/modifier`}
-              className="flex h-11 items-center rounded-xl border border-marly-bord bg-white px-4 font-medium"
+              className="flex h-11 items-center rounded-xl border border-line-strong bg-surface px-4 font-medium"
             >
               Modifier
             </Link>
@@ -75,7 +75,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         {premiereAValider && peutGerer && (
           <Link
             href={`/pieces/${premiereAValider.id}`}
-            className="flex h-11 items-center rounded-xl bg-marly-bleu px-5 font-bold text-white"
+            className="flex h-11 items-center rounded-xl bg-action px-5 font-bold text-white"
           >
             Valider les pièces ({dossier.aValider})
           </Link>
@@ -106,10 +106,10 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
         <ExportSage dossierId={dossier.id} apercu={apercuExport} lots={lotsExport} />
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
         <table className="w-full min-w-[640px] border-collapse text-left">
           <thead>
-            <tr className="text-sm text-marly-gris">
+            <tr className="text-sm text-muted">
               <th className="px-5 py-3 font-medium">Date</th>
               <th className="px-3 py-3 font-medium">Fournisseur</th>
               <th className="px-3 py-3 font-medium">Catégorie</th>
@@ -120,7 +120,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
           </thead>
           <tbody>
             {pieces.map((p) => (
-              <tr key={p.id} className="border-t border-marly-bord">
+              <tr key={p.id} className="border-t border-line">
                 <td className="px-5 py-4">{new Date(p.date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}</td>
                 <td className="px-3 py-4 font-medium">{p.fournisseur ?? "Non précisé"}</td>
                 <td className="px-3 py-4">{p.categorie}</td>
@@ -132,7 +132,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
                 </td>
                 <td className="px-5 py-4 text-right">
                   {peutGerer && (
-                    <Link href={`/pieces/${p.id}`} className="font-bold text-marly-bleu underline">
+                    <Link href={`/pieces/${p.id}`} className="font-bold text-heading underline">
                       {p.statut === "RECUE" ? "Valider" : "Voir"}
                     </Link>
                   )}
@@ -149,7 +149,7 @@ async function ContenuDossier({ params }: { params: Promise<{ id: string }> }) {
 export default function PageDossier({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <Suspense fallback={<p className="text-marly-gris">Chargement du dossier…</p>}>
+      <Suspense fallback={<p className="text-muted">Chargement du dossier…</p>}>
         <ContenuDossier params={params} />
       </Suspense>
     </main>

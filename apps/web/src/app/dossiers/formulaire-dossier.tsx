@@ -24,15 +24,15 @@ export function FormulaireDossier({
   const valeurs = etat.valeurs ?? initial;
 
   return (
-    <form action={envoyer} className="flex flex-col gap-5 rounded-2xl border border-marly-bord bg-white p-6">
+    <form action={envoyer} className="flex flex-col gap-5 rounded-2xl border border-line bg-surface p-6">
       {etat.erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {etat.erreur}
         </p>
       )}
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="raisonSociale" className="text-sm font-medium text-marly-gris">
+        <label htmlFor="raisonSociale" className="text-sm font-medium text-muted">
           Raison sociale
         </label>
         <input
@@ -43,17 +43,17 @@ export function FormulaireDossier({
           maxLength={120}
           defaultValue={valeurs.raisonSociale}
           placeholder="Ex. : Pharmacie du Littoral"
-          className="h-12 rounded-xl border border-marly-bord px-3"
+          className="h-12 rounded-xl border border-line-strong px-3"
         />
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium text-marly-gris">Régime fiscal</legend>
+        <legend className="mb-2 text-sm font-medium text-muted">Régime fiscal</legend>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {REGIMES.map((r) => (
             <label
               key={r.valeur}
-              className="flex cursor-pointer items-start gap-3 rounded-xl border border-marly-bord p-4 has-[:checked]:border-marly-bleu has-[:checked]:bg-[#E6EEF9]"
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-strong p-4 has-[:checked]:border-action has-[:checked]:bg-info-bg"
             >
               <input
                 type="radio"
@@ -65,7 +65,7 @@ export function FormulaireDossier({
               />
               <span className="flex flex-col">
                 <strong>{r.titre}</strong>
-                <span className="text-sm text-marly-gris">{r.detail}</span>
+                <span className="text-sm text-muted">{r.detail}</span>
               </span>
             </label>
           ))}
@@ -74,7 +74,7 @@ export function FormulaireDossier({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
-          <label htmlFor="niu" className="text-sm font-medium text-marly-gris">
+          <label htmlFor="niu" className="text-sm font-medium text-muted">
             NIU (facultatif)
           </label>
           <input
@@ -83,11 +83,11 @@ export function FormulaireDossier({
             maxLength={30}
             defaultValue={valeurs.niu}
             placeholder="M012345678901A"
-            className="h-12 rounded-xl border border-marly-bord px-3 uppercase"
+            className="h-12 rounded-xl border border-line-strong px-3 uppercase"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="rccm" className="text-sm font-medium text-marly-gris">
+          <label htmlFor="rccm" className="text-sm font-medium text-muted">
             RCCM (facultatif)
           </label>
           <input
@@ -96,7 +96,7 @@ export function FormulaireDossier({
             maxLength={40}
             defaultValue={valeurs.rccm}
             placeholder="RC/DLA/2024/B/1234"
-            className="h-12 rounded-xl border border-marly-bord px-3"
+            className="h-12 rounded-xl border border-line-strong px-3"
           />
         </div>
       </div>
@@ -105,11 +105,11 @@ export function FormulaireDossier({
         <button
           type="submit"
           disabled={enCours}
-          className="h-12 rounded-xl bg-marly-bleu px-6 font-bold text-white disabled:opacity-60"
+          className="h-12 rounded-xl bg-action px-6 font-bold text-white disabled:opacity-60"
         >
           {enCours ? "Enregistrement…" : libelleBouton}
         </button>
-        <Link href={annulerVers} className="px-3 text-sm text-marly-gris underline">
+        <Link href={annulerVers} className="px-3 text-sm text-muted underline">
           Annuler
         </Link>
       </div>

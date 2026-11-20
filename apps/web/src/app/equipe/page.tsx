@@ -8,10 +8,10 @@ async function ContenuEquipe() {
 
   return (
     <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-marly-gris">
+      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
         <Link href="/dossiers" className="underline">← Dossiers du cabinet</Link>
       </nav>
-      <h1 className="mb-6 text-3xl font-bold text-marly-bleu">Équipe de {profil.cabinet}</h1>
+      <h1 className="mb-6 text-3xl font-bold text-heading">Équipe de {profil.cabinet}</h1>
       <GestionAcces
         titre="Collaborateurs"
         role="COMPTABLE"
@@ -28,7 +28,7 @@ async function ContenuEquipe() {
 export default function PageEquipe() {
   return (
     <main className="mx-auto max-w-3xl p-6">
-      <Suspense fallback={<p className="text-marly-gris">Chargement de l&apos;équipe…</p>}>
+      <Suspense fallback={<p className="text-muted">Chargement de l&apos;équipe…</p>}>
         <ContenuEquipe />
       </Suspense>
     </main>

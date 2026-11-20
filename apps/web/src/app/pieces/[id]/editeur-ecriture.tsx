@@ -115,18 +115,18 @@ export function EditeurEcriture({
   }
 
   return (
-    <section className="flex flex-col rounded-2xl border-2 border-marly-bleu bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-marly-bord px-5 py-4">
+    <section className="flex flex-col rounded-2xl border-2 border-action bg-surface">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
         <h2 className="text-base font-bold">
           {lectureSeule ? "Écriture enregistrée" : "Écriture proposée"} · journal {journal}
         </h2>
-        <span className="text-sm text-marly-gris">Plan comptable SYSCOHADA</span>
+        <span className="text-sm text-muted">Plan comptable SYSCOHADA</span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[620px] border-collapse text-left text-sm">
           <thead>
-            <tr className="text-xs text-marly-gris">
+            <tr className="text-xs text-muted">
               <th className="px-4 py-2 font-medium">Compte</th>
               <th className="px-2 py-2 font-medium">Libellé</th>
               <th className="px-2 py-2 text-right font-medium">Débit</th>
@@ -136,7 +136,7 @@ export function EditeurEcriture({
           </thead>
           <tbody>
             {lignes.map((ligne, index) => (
-              <tr key={index} className="border-t border-marly-bord">
+              <tr key={index} className="border-t border-line">
                 <td className="px-4 py-2">
                   <input
                     aria-label={`Compte de la ligne ${index + 1}`}
@@ -144,7 +144,7 @@ export function EditeurEcriture({
                     onChange={(e) => modifier(index, "compte", e.target.value)}
                     readOnly={lectureSeule}
                     inputMode="numeric"
-                    className="h-10 w-24 rounded-lg border border-marly-bord px-2 font-bold read-only:border-transparent"
+                    className="h-10 w-24 rounded-lg border border-line-strong px-2 font-bold read-only:border-transparent"
                   />
                 </td>
                 <td className="px-2 py-2">
@@ -153,7 +153,7 @@ export function EditeurEcriture({
                     value={ligne.libelle}
                     onChange={(e) => modifier(index, "libelle", e.target.value)}
                     readOnly={lectureSeule}
-                    className="h-10 w-full min-w-40 rounded-lg border border-marly-bord px-2 read-only:border-transparent"
+                    className="h-10 w-full min-w-40 rounded-lg border border-line-strong px-2 read-only:border-transparent"
                   />
                 </td>
                 <td className="px-2 py-2">
@@ -163,7 +163,7 @@ export function EditeurEcriture({
                     onChange={(e) => modifier(index, "debit", e.target.value)}
                     readOnly={lectureSeule}
                     inputMode="numeric"
-                    className="h-10 w-28 rounded-lg border border-marly-bord px-2 text-right tabular-nums read-only:border-transparent"
+                    className="h-10 w-28 rounded-lg border border-line-strong px-2 text-right tabular-nums read-only:border-transparent"
                   />
                 </td>
                 <td className="px-2 py-2">
@@ -173,7 +173,7 @@ export function EditeurEcriture({
                     onChange={(e) => modifier(index, "credit", e.target.value)}
                     readOnly={lectureSeule}
                     inputMode="numeric"
-                    className="h-10 w-28 rounded-lg border border-marly-bord px-2 text-right tabular-nums read-only:border-transparent"
+                    className="h-10 w-28 rounded-lg border border-line-strong px-2 text-right tabular-nums read-only:border-transparent"
                   />
                 </td>
                 {!lectureSeule && (
@@ -182,7 +182,7 @@ export function EditeurEcriture({
                       <button
                         type="button"
                         onClick={() => supprimerLigne(index)}
-                        className="h-10 rounded-lg px-2 text-marly-gris underline"
+                        className="h-10 rounded-lg px-2 text-muted underline"
                       >
                         Retirer
                       </button>
@@ -191,10 +191,10 @@ export function EditeurEcriture({
                 )}
               </tr>
             ))}
-            <tr className="border-t-2 border-marly-bord font-bold">
+            <tr className="border-t-2 border-line font-bold">
               <td className="px-4 py-3" colSpan={2}>
                 Total ·{" "}
-                <span className={equilibree ? "text-[#11734B]" : "text-[#A12A2A]"}>
+                <span className={equilibree ? "text-success-ink" : "text-danger-ink"}>
                   {equilibree ? "équilibrée" : "déséquilibrée"}
                 </span>
               </td>
@@ -207,9 +207,9 @@ export function EditeurEcriture({
       </div>
 
       {!lectureSeule && (
-        <div className="flex flex-col gap-3 border-t border-marly-bord p-5">
+        <div className="flex flex-col gap-3 border-t border-line p-5">
           {erreur && (
-            <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+            <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
               {erreur}
             </p>
           )}
@@ -217,7 +217,7 @@ export function EditeurEcriture({
             <button
               type="button"
               onClick={ajouterLigne}
-              className="h-11 rounded-xl border border-marly-bord px-4 text-sm font-medium"
+              className="h-11 rounded-xl border border-line-strong px-4 text-sm font-medium"
             >
               Ajouter une ligne
             </button>
@@ -225,7 +225,7 @@ export function EditeurEcriture({
               type="button"
               onClick={valider}
               disabled={!equilibree || envoiEnCours}
-              className="h-11 rounded-xl bg-marly-bleu px-5 font-bold text-white disabled:opacity-50"
+              className="h-11 rounded-xl bg-action px-5 font-bold text-white disabled:opacity-50"
             >
               {envoiEnCours
                 ? "Validation…"

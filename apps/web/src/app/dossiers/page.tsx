@@ -7,9 +7,9 @@ import { seDeconnecter } from "../connexion/actions";
 
 function Carte({ titre, valeur }: { titre: string; valeur: number }) {
   return (
-    <div className="flex flex-col gap-1 rounded-2xl border border-marly-bord bg-white p-5">
-      <span className="text-sm text-marly-gris">{titre}</span>
-      <strong className="text-3xl text-marly-bleu">{valeur}</strong>
+    <div className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-5">
+      <span className="text-sm text-muted">{titre}</span>
+      <strong className="text-3xl text-heading">{valeur}</strong>
     </div>
   );
 }
@@ -21,20 +21,20 @@ function aRelancer(dossier: ResumeDossier): boolean {
 function Statut({ dossier }: { dossier: ResumeDossier }) {
   if (aRelancer(dossier)) {
     return (
-      <span className="rounded-full bg-[#FFF2DB] px-3 py-1 text-sm font-medium text-[#7A4A00]">
+      <span className="rounded-full bg-warning-bg px-3 py-1 text-sm font-medium text-warning-ink">
         À relancer
       </span>
     );
   }
   if (dossier.aValider > 0) {
     return (
-      <span className="rounded-full bg-[#E6EEF9] px-3 py-1 text-sm font-medium text-[#1D4F91]">
+      <span className="rounded-full bg-info-bg px-3 py-1 text-sm font-medium text-info-ink">
         En cours
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-[#E3F5EC] px-3 py-1 text-sm font-medium text-[#11734B]">
+    <span className="rounded-full bg-success-bg px-3 py-1 text-sm font-medium text-success-ink">
       À jour
     </span>
   );
@@ -42,20 +42,20 @@ function Statut({ dossier }: { dossier: ResumeDossier }) {
 
 function Chargement() {
   return (
-    <div className="rounded-2xl border border-marly-bord bg-white p-6 text-marly-gris">
+    <div className="rounded-2xl border border-line bg-surface p-6 text-muted">
       Chargement des dossiers…
     </div>
   );
 }
 
 const CLASSES_BOUTON =
-  "flex h-11 items-center rounded-xl bg-marly-bleu px-5 font-bold text-white";
+  "flex h-11 items-center rounded-xl bg-action px-5 font-bold text-white";
 
 function Accueil() {
   return (
-    <section className="flex flex-col items-start gap-4 rounded-2xl border border-marly-bord bg-white p-8">
-      <h2 className="text-2xl font-bold text-marly-bleu">Bienvenue sur Marly</h2>
-      <ol className="flex list-decimal flex-col gap-2 pl-5 text-marly-texte">
+    <section className="flex flex-col items-start gap-4 rounded-2xl border border-line bg-surface p-8">
+      <h2 className="text-2xl font-bold text-heading">Bienvenue sur Marly</h2>
+      <ol className="flex list-decimal flex-col gap-2 pl-5 text-ink">
         <li>Crée un dossier pour chaque entreprise que tu suis.</li>
         <li>Invite son gérant : il enverra ses pièces depuis son téléphone.</li>
         <li>Valide les écritures proposées, puis exporte-les vers Sage.</li>
@@ -84,14 +84,14 @@ async function ContenuDossiers() {
     <>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-marly-gris">{profil.cabinet}</span>
-          <h1 className="text-3xl font-bold text-marly-bleu">Bonjour, {profil.nom}</h1>
+          <span className="text-sm text-muted">{profil.cabinet}</span>
+          <h1 className="text-3xl font-bold text-heading">Bonjour, {profil.nom}</h1>
         </div>
         <div className="flex flex-wrap gap-3">
           {profil.role === "RESPONSABLE" && (
             <Link
               href="/equipe"
-              className="flex h-11 items-center rounded-xl border border-marly-bord bg-white px-4 font-medium"
+              className="flex h-11 items-center rounded-xl border border-line-strong bg-surface px-4 font-medium"
             >
               Équipe
             </Link>
@@ -104,7 +104,7 @@ async function ContenuDossiers() {
           <form action={seDeconnecter}>
             <button
               type="submit"
-              className="h-11 rounded-xl border border-marly-bord bg-white px-4 font-medium text-marly-texte"
+              className="h-11 rounded-xl border border-line-strong bg-surface px-4 font-medium text-ink"
             >
               Se déconnecter
             </button>
@@ -119,7 +119,7 @@ async function ContenuDossiers() {
           <div
             role="status"
             className={`mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl p-4 ${
-              urgent ? "bg-[#FDECEC] text-[#A12A2A]" : "bg-[#FFF2DB] text-[#6E4300]"
+              urgent ? "bg-danger-bg text-danger-ink" : "bg-warning-bg text-warning-ink"
             }`}
           >
             <strong className="text-2xl">J-{jours}</strong>
@@ -137,10 +137,10 @@ async function ContenuDossiers() {
             <Carte titre="Pièces demandées" valeur={totalDemandes} />
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-marly-bord bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
             <table className="w-full min-w-[720px] border-collapse text-left">
               <thead>
-                <tr className="text-sm text-marly-gris">
+                <tr className="text-sm text-muted">
                   <th className="px-5 py-3 font-medium">Dossier</th>
                   <th className="px-3 py-3 font-medium">Régime</th>
                   <th className="px-3 py-3 text-right font-medium">Reçues</th>
@@ -151,9 +151,9 @@ async function ContenuDossiers() {
               </thead>
               <tbody>
                 {dossiers.map((d) => (
-                  <tr key={d.id} className="border-t border-marly-bord">
+                  <tr key={d.id} className="border-t border-line">
                     <td className="px-5 py-4 font-bold">
-                      <Link href={`/dossiers/${d.id}`} className="text-marly-bleu underline">
+                      <Link href={`/dossiers/${d.id}`} className="text-heading underline">
                         {d.raisonSociale}
                       </Link>
                     </td>
@@ -182,7 +182,7 @@ export default function PageDossiers() {
         <ContenuDossiers />
       </Suspense>
       <p className="mt-6 text-sm">
-        <Link href="/" className="text-marly-gris underline">
+        <Link href="/" className="text-muted underline">
           Accueil
         </Link>
       </p>

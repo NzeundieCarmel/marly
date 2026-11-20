@@ -48,7 +48,7 @@ export function RenvoyerPiece({
       <button
         type="button"
         onClick={() => setOuvert(true)}
-        className="h-11 self-start rounded-xl border border-[#7A4A00] px-4 text-sm font-medium text-[#7A4A00]"
+        className="h-11 self-start rounded-xl border border-warning-ink px-4 text-sm font-medium text-warning-ink"
       >
         Renvoyer à l&apos;entreprise (pièce illisible, incomplète…)
       </button>
@@ -56,9 +56,9 @@ export function RenvoyerPiece({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-[#F0C97A] bg-[#FFF8EC] p-5">
+    <section className="flex flex-col gap-3 rounded-2xl border border-warning-line bg-warning-bg p-5">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 font-bold text-[#7A4A00]">Pourquoi renvoyer cette pièce ?</legend>
+        <legend className="mb-2 font-bold text-warning-ink">Pourquoi renvoyer cette pièce ?</legend>
         {MOTIFS.map((m) => (
           <label key={m} className="flex min-h-10 items-center gap-2">
             <input
@@ -74,12 +74,12 @@ export function RenvoyerPiece({
       </fieldset>
 
       {erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {erreur}
         </p>
       )}
 
-      <p className="text-sm text-[#7A4A00]">
+      <p className="text-sm text-warning-ink">
         L&apos;entreprise verra cette demande sur son téléphone et pourra envoyer une nouvelle photo.
       </p>
       <div className="flex flex-wrap gap-3">
@@ -87,7 +87,7 @@ export function RenvoyerPiece({
           type="button"
           onClick={renvoyer}
           disabled={enCours}
-          className="h-11 rounded-xl bg-[#7A4A00] px-5 font-bold text-white disabled:opacity-60"
+          className="h-11 rounded-xl bg-warning-ink px-5 font-bold text-warning-bg disabled:opacity-60"
         >
           {enCours ? "Renvoi…" : "Confirmer le renvoi"}
         </button>

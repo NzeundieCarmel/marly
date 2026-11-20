@@ -144,20 +144,20 @@ export function GestionAcces({
   return (
     <section
       aria-labelledby="titre-acces"
-      className="mb-6 flex flex-col gap-4 rounded-2xl border border-marly-bord bg-white p-5"
+      className="mb-6 flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5"
     >
       <h2 id="titre-acces" className="text-lg font-bold">
         {titre}
       </h2>
 
       {erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {erreur}
         </p>
       )}
 
       {membres.length === 0 && enAttente.length === 0 ? (
-        <p className="text-sm text-marly-gris">
+        <p className="text-sm text-muted">
           {role === "PME"
             ? "Personne n'a encore accès à ce dossier."
             : "Personne d'autre n'a encore rejoint le cabinet."}
@@ -167,13 +167,13 @@ export function GestionAcces({
           {membres.map((m) => (
             <li
               key={m.id}
-              className="flex flex-wrap items-center justify-between gap-2 border-t border-marly-bord py-3 first:border-t-0"
+              className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-3 first:border-t-0"
             >
               <span className="flex flex-col">
                 <span className="font-medium">{m.nom}</span>
-                <span className="text-sm text-marly-gris">{m.email}</span>
+                <span className="text-sm text-muted">{m.email}</span>
               </span>
-              <span className="rounded-full bg-[#E3F5EC] px-3 py-1 text-sm font-medium text-[#11734B]">
+              <span className="rounded-full bg-success-bg px-3 py-1 text-sm font-medium text-success-ink">
                 {m.role === "RESPONSABLE" ? "Responsable" : "Accès actif"}
               </span>
             </li>
@@ -181,11 +181,11 @@ export function GestionAcces({
           {enAttente.map((i) => (
             <li
               key={i.id}
-              className="flex flex-wrap items-center justify-between gap-2 border-t border-marly-bord py-3 first:border-t-0"
+              className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-3 first:border-t-0"
             >
               <span className="flex flex-col">
                 <span className="font-medium">{i.nom}</span>
-                <span className={`text-sm ${i.expiree ? "text-[#A12A2A]" : "text-marly-gris"}`}>
+                <span className={`text-sm ${i.expiree ? "text-danger-ink" : "text-muted"}`}>
                   {i.expiree
                     ? "Invitation expirée"
                     : `Invitation en attente, valable jusqu'au ${formatJour(i.expireLe)}`}
@@ -196,14 +196,14 @@ export function GestionAcces({
                   <button
                     type="button"
                     onClick={() => agir(i, "renouveler")}
-                    className="h-10 rounded-lg border border-marly-bord px-3 text-sm font-medium"
+                    className="h-10 rounded-lg border border-line-strong px-3 text-sm font-medium"
                   >
                     Nouveau lien
                   </button>
                   <button
                     type="button"
                     onClick={() => agir(i, "annuler")}
-                    className="h-10 rounded-lg px-3 text-sm text-marly-gris underline"
+                    className="h-10 rounded-lg px-3 text-sm text-muted underline"
                   >
                     Annuler
                   </button>
@@ -215,41 +215,41 @@ export function GestionAcces({
       )}
 
       {lienCree && (
-        <div className="flex flex-col gap-3 rounded-xl bg-[#E3F5EC] p-4" role="status">
-          <strong className="text-[#11734B]">Lien prêt pour {lienCree.nom}</strong>
+        <div className="flex flex-col gap-3 rounded-xl bg-success-bg p-4" role="status">
+          <strong className="text-success-ink">Lien prêt pour {lienCree.nom}</strong>
           <input
             readOnly
             value={lienCree.lien}
             aria-label="Lien d'invitation"
             onFocus={(e) => e.currentTarget.select()}
-            className="h-11 rounded-lg border border-marly-bord bg-white px-3 text-sm"
+            className="h-11 rounded-lg border border-line-strong bg-surface px-3 text-sm"
           />
           <div className="flex flex-wrap gap-3">
             <a
               href={`https://wa.me/${numeroWhatsApp(lienCree.telephone)}?text=${encodeURIComponent(message)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-11 items-center rounded-xl bg-[#1FA855] px-4 font-bold text-white"
+              className="flex h-11 items-center rounded-xl bg-whatsapp px-4 font-bold text-white"
             >
               Partager sur WhatsApp
             </a>
             <button
               type="button"
               onClick={copier}
-              className="h-11 rounded-xl border border-marly-bord bg-white px-4 font-medium"
+              className="h-11 rounded-xl border border-line-strong bg-surface px-4 font-medium"
             >
               {copie ? "Lien copié" : "Copier le lien"}
             </button>
           </div>
-          <span className="text-xs text-marly-gris">
+          <span className="text-xs text-muted">
             Ce lien ne sera plus affiché. En cas de perte, utilise « Nouveau lien ».
           </span>
         </div>
       )}
 
       {peutInviter && (
-        <form onSubmit={inviter} className="flex flex-col gap-3 border-t border-marly-bord pt-4">
-          <span className="text-sm font-medium text-marly-gris">
+        <form onSubmit={inviter} className="flex flex-col gap-3 border-t border-line pt-4">
+          <span className="text-sm font-medium text-muted">
             {role === "PME" ? "Inviter le gérant ou un employé" : "Inviter un collaborateur comptable"}
           </span>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -261,7 +261,7 @@ export function GestionAcces({
               maxLength={80}
               placeholder="Nom"
               aria-label="Nom de la personne invitée"
-              className="h-11 rounded-xl border border-marly-bord px-3"
+              className="h-11 rounded-xl border border-line-strong px-3"
             />
             <input
               value={telephone}
@@ -271,7 +271,7 @@ export function GestionAcces({
               maxLength={20}
               placeholder="WhatsApp (ex. 677 12 34 56)"
               aria-label="Numéro WhatsApp (facultatif)"
-              className="h-11 rounded-xl border border-marly-bord px-3"
+              className="h-11 rounded-xl border border-line-strong px-3"
             />
             <input
               value={email}
@@ -280,13 +280,13 @@ export function GestionAcces({
               maxLength={254}
               placeholder="E-mail (facultatif)"
               aria-label="E-mail (facultatif)"
-              className="h-11 rounded-xl border border-marly-bord px-3"
+              className="h-11 rounded-xl border border-line-strong px-3"
             />
           </div>
           <button
             type="submit"
             disabled={enCours}
-            className="h-11 self-start rounded-xl bg-marly-bleu px-5 font-bold text-white disabled:opacity-60"
+            className="h-11 self-start rounded-xl bg-action px-5 font-bold text-white disabled:opacity-60"
           >
             {enCours ? "Création…" : "Créer le lien d'invitation"}
           </button>

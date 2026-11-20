@@ -10,12 +10,12 @@ async function ContenuModifier({ params }: { params: Promise<{ id: string }> }) 
 
   return (
     <>
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-marly-gris">
+      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
         <Link href={`/dossiers/${dossier.id}`} className="underline">
           ← {dossier.raisonSociale}
         </Link>
       </nav>
-      <h1 className="mb-6 text-3xl font-bold text-marly-bleu">Modifier le dossier</h1>
+      <h1 className="mb-6 text-3xl font-bold text-heading">Modifier le dossier</h1>
       <FormulaireDossier
         action={modifierDossier.bind(null, dossier.id)}
         initial={{
@@ -27,7 +27,7 @@ async function ContenuModifier({ params }: { params: Promise<{ id: string }> }) 
         libelleBouton="Enregistrer les modifications"
         annulerVers={`/dossiers/${dossier.id}`}
       />
-      <p className="mt-4 text-sm text-marly-gris">
+      <p className="mt-4 text-sm text-muted">
         Changer de régime ne modifie pas les écritures déjà validées : seules les prochaines
         propositions en tiennent compte.
       </p>
@@ -38,7 +38,7 @@ async function ContenuModifier({ params }: { params: Promise<{ id: string }> }) 
 export default function PageModifierDossier({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <Suspense fallback={<p className="text-marly-gris">Chargement du dossier…</p>}>
+      <Suspense fallback={<p className="text-muted">Chargement du dossier…</p>}>
         <ContenuModifier params={params} />
       </Suspense>
     </main>

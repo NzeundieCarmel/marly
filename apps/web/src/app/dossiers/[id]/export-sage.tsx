@@ -62,37 +62,37 @@ export function ExportSage({
   return (
     <section
       aria-labelledby="titre-export"
-      className="mb-6 flex flex-col gap-4 rounded-2xl border border-marly-bord bg-white p-5"
+      className="mb-6 flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="titre-export" className="text-lg font-bold">
           Export vers Sage
         </h2>
-        <span className="text-sm text-marly-gris">Fichier CSV · séparateur « ; »</span>
+        <span className="text-sm text-muted">Fichier CSV · séparateur « ; »</span>
       </div>
 
       {erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {erreur}
         </p>
       )}
 
       {apercu.nbPieces === 0 ? (
-        <p className="text-sm text-marly-gris">Aucune nouvelle pièce validée à exporter.</p>
+        <p className="text-sm text-muted">Aucune nouvelle pièce validée à exporter.</p>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-marly-fond p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-page p-4">
           <div className="flex flex-col gap-1">
             <strong>
               {apercu.nbPieces} pièce{apercu.nbPieces > 1 ? "s" : ""} prête
               {apercu.nbPieces > 1 ? "s" : ""} à exporter
             </strong>
-            <span className="text-sm text-marly-gris">
+            <span className="text-sm text-muted">
               {apercu.nbLignes} lignes
               {apercu.du && apercu.au
                 ? ` · du ${formatJour(apercu.du)} au ${formatJour(apercu.au)}`
                 : ""}
             </span>
-            <span className={`text-sm ${equilibre ? "text-[#11734B]" : "text-[#A12A2A]"}`}>
+            <span className={`text-sm ${equilibre ? "text-success-ink" : "text-danger-ink"}`}>
               Débit {formatMontant.format(apercu.totalDebit)} {equilibre ? "=" : "≠"} Crédit{" "}
               {formatMontant.format(apercu.totalCredit)} FCFA
             </span>
@@ -101,7 +101,7 @@ export function ExportSage({
             type="button"
             onClick={generer}
             disabled={enCours || !equilibre}
-            className="h-11 rounded-xl bg-marly-bleu px-5 font-bold text-white disabled:opacity-60"
+            className="h-11 rounded-xl bg-action px-5 font-bold text-white disabled:opacity-60"
           >
             {enCours ? "Génération…" : "Générer l'export"}
           </button>
@@ -111,11 +111,11 @@ export function ExportSage({
       {lots.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-left text-sm">
-            <caption className="mb-2 text-left font-medium text-marly-gris">
+            <caption className="mb-2 text-left font-medium text-muted">
               Exports précédents
             </caption>
             <thead>
-              <tr className="text-marly-gris">
+              <tr className="text-muted">
                 <th className="py-2 pr-3 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Par</th>
                 <th className="px-3 py-2 text-right font-medium">Pièces</th>
@@ -127,7 +127,7 @@ export function ExportSage({
             </thead>
             <tbody>
               {lots.map((lot) => (
-                <tr key={lot.id} className="border-t border-marly-bord">
+                <tr key={lot.id} className="border-t border-line">
                   <td className="py-3 pr-3">{formatDateHeure(lot.creeLe)}</td>
                   <td className="px-3 py-3">{lot.creePar}</td>
                   <td className="px-3 py-3 text-right">{lot.nbPieces}</td>
@@ -137,7 +137,7 @@ export function ExportSage({
                   <td className="py-3 pl-3 text-right">
                     <a
                       href={`/api/exports/${lot.id}/fichier`}
-                      className="font-bold text-marly-bleu underline"
+                      className="font-bold text-heading underline"
                     >
                       Télécharger
                     </a>

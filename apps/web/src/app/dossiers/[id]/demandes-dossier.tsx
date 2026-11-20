@@ -72,26 +72,26 @@ export function DemandesDossier({
   }
 
   return (
-    <section aria-labelledby="titre-demandes" className="mb-6 flex flex-col gap-4 rounded-2xl border border-marly-bord bg-white p-5">
+    <section aria-labelledby="titre-demandes" className="mb-6 flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
       <h2 id="titre-demandes" className="text-lg font-bold">
         Pièces demandées à l&apos;entreprise ({ouvertes.length})
       </h2>
 
       {erreur && (
-        <p role="alert" className="rounded-xl bg-[#FDECEC] p-3 text-sm text-[#A12A2A]">
+        <p role="alert" className="rounded-xl bg-danger-bg p-3 text-sm text-danger-ink">
           {erreur}
         </p>
       )}
 
       {ouvertes.length === 0 ? (
-        <p className="text-sm text-marly-gris">Aucune pièce en attente pour ce dossier.</p>
+        <p className="text-sm text-muted">Aucune pièce en attente pour ce dossier.</p>
       ) : (
         <ul className="flex flex-col">
           {ouvertes.map((d) => (
-            <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-marly-bord py-3 first:border-t-0">
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line py-3 first:border-t-0">
               <div className="flex flex-col">
                 <span className="font-medium">{d.description}</span>
-                <span className="text-sm text-marly-gris">
+                <span className="text-sm text-muted">
                   {d.pieceId ? "Pièce renvoyée · " : ""}À fournir avant le {formatDate(d.echeance)}
                 </span>
               </div>
@@ -99,7 +99,7 @@ export function DemandesDossier({
                 <button
                   type="button"
                   onClick={() => annuler(d.id)}
-                  className="h-10 rounded-lg px-3 text-sm text-marly-gris underline"
+                  className="h-10 rounded-lg px-3 text-sm text-muted underline"
                 >
                   Annuler
                 </button>
@@ -110,9 +110,9 @@ export function DemandesDossier({
       )}
 
       {peutGerer && (
-        <form onSubmit={demander} className="flex flex-wrap items-end gap-3 border-t border-marly-bord pt-4">
+        <form onSubmit={demander} className="flex flex-wrap items-end gap-3 border-t border-line pt-4">
           <div className="flex min-w-60 flex-1 flex-col gap-1">
-            <label htmlFor="description" className="text-sm font-medium text-marly-gris">
+            <label htmlFor="description" className="text-sm font-medium text-muted">
               Demander une pièce
             </label>
             <input
@@ -122,11 +122,11 @@ export function DemandesDossier({
               placeholder="Ex. : Relevé bancaire d'octobre"
               required
               maxLength={160}
-              className="h-11 rounded-xl border border-marly-bord px-3"
+              className="h-11 rounded-xl border border-line-strong px-3"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="echeance" className="text-sm font-medium text-marly-gris">
+            <label htmlFor="echeance" className="text-sm font-medium text-muted">
               Avant le
             </label>
             <input
@@ -135,13 +135,13 @@ export function DemandesDossier({
               value={echeance}
               onChange={(e) => setEcheance(e.target.value)}
               required
-              className="h-11 rounded-xl border border-marly-bord px-3"
+              className="h-11 rounded-xl border border-line-strong px-3"
             />
           </div>
           <button
             type="submit"
             disabled={enCours}
-            className="h-11 rounded-xl bg-marly-bleu px-5 font-bold text-white disabled:opacity-60"
+            className="h-11 rounded-xl bg-action px-5 font-bold text-white disabled:opacity-60"
           >
             {enCours ? "Envoi…" : "Demander"}
           </button>
@@ -149,7 +149,7 @@ export function DemandesDossier({
       )}
 
       {closes.length > 0 && (
-        <details className="text-sm text-marly-gris">
+        <details className="text-sm text-muted">
           <summary className="cursor-pointer">Demandes closes récentes ({closes.length})</summary>
           <ul className="mt-2 flex flex-col gap-1">
             {closes.map((d) => (

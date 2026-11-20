@@ -1,15 +1,134 @@
 @import "tailwindcss";
 
-@theme {
-  --color-marly-bleu: #10294A;
-  --color-marly-vert: #2BB673;
-  --color-marly-texte: #1A2230;
-  --color-marly-gris: #4E5867;
-  --color-marly-bord: #E3E7EE;
-  --color-marly-fond: #F5F7FA;
+/* Design system Marly : jetons de couleur (source : le design system « Marly »).
+   Les ecrans utilisent les classes Tailwind ci-dessous (bg-surface, text-muted,
+   bg-warning-bg...), jamais de code couleur ecrit en dur. */
+
+:root {
+  color-scheme: light;
+  --brand-900: #0B1E38;
+  --brand-800: #10294A;
+  --brand-700: #1B3A63;
+  --brand-100: #E6EEF9;
+  --brand-50: #F2F6FC;
+  --accent-500: #2BB673;
+  --accent-700: #11734B;
+  --accent-100: #E3F5EC;
+  --bg-page: #F5F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-sunken: #EEF1F5;
+  --bg-hover: #F2F6FC;
+  --ink: #1A2230;
+  --ink-muted: #4E5867;
+  --ink-heading: #10294A;
+  --ink-link: #10294A;
+  --ink-inverse: #FFFFFF;
+  --line: #E3E7EE;
+  --line-strong: #8A94A6;
+  --action-primary: #10294A;
+  --action-primary-hover: #1B3A63;
+  --focus: #1D4F91;
+  --whatsapp: #0F7B3E;
+  --success-bg: #E3F5EC;
+  --success-ink: #11734B;
+  --info-bg: #E6EEF9;
+  --info-ink: #1D4F91;
+  --warning-bg: #FFF2DB;
+  --warning-ink: #7A4A00;
+  --warning-line: #F0C97A;
+  --danger-bg: #FDECEC;
+  --danger-ink: #A12A2A;
+  --neutral-bg: #EEF1F5;
+  --neutral-ink: #4E5867;
+  --identity: #10294A;
+}
+
+/* Theme sombre : suit le reglage du telephone ou de l'ordinateur */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg-page: #0E1726;
+    --bg-surface: #152235;
+    --bg-sunken: #0B1320;
+    --bg-hover: #1B2A42;
+    --ink: #E8EDF5;
+    --ink-muted: #A3AEC0;
+    --ink-heading: #E8EDF5;
+    --ink-link: #8CB4F0;
+    --line: #26354D;
+    --line-strong: #64748F;
+    --action-primary: #2F5EA8;
+    --action-primary-hover: #3A6BBA;
+    --focus: #9CC0F5;
+    --success-bg: #12382A;
+    --success-ink: #6FD9A6;
+    --info-bg: #16294A;
+    --info-ink: #9CC0F5;
+    --warning-bg: #3A2A0E;
+    --warning-ink: #F4C26B;
+    --warning-line: #6B4F1A;
+    --danger-bg: #3D1A1C;
+    --danger-ink: #F49A9A;
+    --neutral-bg: #1E2A3D;
+    --neutral-ink: #A3AEC0;
+    --identity: #2A5590;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-page: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-sunken: var(--bg-sunken);
+  --color-survol: var(--bg-hover);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-heading: var(--ink-heading);
+  --color-link: var(--ink-link);
+  --color-on-action: var(--ink-inverse);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-action: var(--action-primary);
+  --color-action-hover: var(--action-primary-hover);
+  --color-focus: var(--focus);
+  --color-whatsapp: var(--whatsapp);
+  --color-success-bg: var(--success-bg);
+  --color-success-ink: var(--success-ink);
+  --color-info-bg: var(--info-bg);
+  --color-info-ink: var(--info-ink);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-ink: var(--danger-ink);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-ink: var(--neutral-ink);
+  --color-warning-line: var(--warning-line);
+  --color-brand-900: var(--brand-900);
+  --color-brand-800: var(--brand-800);
+  --color-brand-700: var(--brand-700);
+  --color-brand-100: var(--brand-100);
+  --color-brand-50: var(--brand-50);
+  --color-accent-500: var(--accent-500);
+  --color-accent-700: var(--accent-700);
+  --color-accent-100: var(--accent-100);
+
+  /* Anciens noms, gardes le temps de la migration */
+  --color-marly-bleu: var(--brand-800);
+  --color-marly-vert: var(--accent-500);
+  --color-marly-texte: var(--ink);
+  --color-marly-gris: var(--ink-muted);
+  --color-marly-bord: var(--line);
+  --color-marly-fond: var(--bg-page);
 }
 
 body {
-  background: var(--color-marly-fond);
-  color: var(--color-marly-texte);
+  background: var(--bg-page);
+  color: var(--ink);
+}
+
+/* Anneau de focus clavier commun */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
