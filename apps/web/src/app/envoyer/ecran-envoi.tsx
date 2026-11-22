@@ -84,6 +84,8 @@ export function EcranEnvoi({
   demandes,
   echeanceTexte,
   dernier,
+  autonome,
+  resume,
 }: {
   dossierId: string;
   prenom: string;
@@ -91,6 +93,8 @@ export function EcranEnvoi({
   demandes: DemandeOuverte[];
   echeanceTexte: string | null;
   dernier: DernierEnvoi | null;
+  autonome: boolean;
+  resume?: React.ReactNode;
 }) {
   const router = useRouter();
   const urlApercu = useRef<string | null>(null);
@@ -118,14 +122,17 @@ export function EcranEnvoi({
           texte: `${pluriel(resultat.refusees, "pièce")} en attente refusée${resultat.refusees > 1 ? "s" : ""} par le serveur. Renvoyez-la avec une nouvelle photo.`,
         });
       } else if (resultat.envoyees > 0) {
+        const accord = resultat.envoyees > 1 ? "s" : "";
         setMessage({
           type: "succes",
-          texte: `${pluriel(resultat.envoyees, "pièce")} en attente envoyée${resultat.envoyees > 1 ? "s" : ""} au cabinet.`,
+          texte: autonome
+            ? `${pluriel(resultat.envoyees, "pièce")} en attente enregistrée${accord}.`
+            : `${pluriel(resultat.envoyees, "pièce")} en attente envoyée${accord} au cabinet.`,
         });
       }
       if (resultat.envoyees > 0) router.refresh();
     },
-    [router],
+    [router, autonome],
   );
 
   // Synchronise à l'ouverture, au retour du réseau, puis toutes les 30 secondes
@@ -222,7 +229,7 @@ export function EcranEnvoi({
         return;
       }
       revenir();
-      setMessage({ type: "succes", texte: "Pièce envoyée au cabinet." });
+        setMessage({ type: "succes", texte: autonome ? "Pièce enregistrée." : "Pièce envoyée au cabinet." });
       router.refresh();
     } catch {
       setMessage({ type: "erreur", texte: "Impossible d'enregistrer la pièce sur le téléphone. Réessayez." });
@@ -350,7 +357,13 @@ export function EcranEnvoi({
           className="mt-2 flex h-13 items-center justify-center gap-2.5 rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover disabled:opacity-60"
         >
           <IconeEnvoyer width={20} height={20} />
-          {envoiEnCours ? "Envoi en cours…" : enLigne ? "Envoyer au cabinet" : "Garder et envoyer plus tard"}
+           {envoiEnCours
+            ? "Envoi en cours…"
+            : !enLigne
+              ? "Garder et envoyer plus tard"
+              : autonome
+                ? "Enregistrer la pièce"
+                : "Envoyer au cabinet"}
         </button>
       </form>
     );
@@ -362,8 +375,10 @@ export function EcranEnvoi({
 
       <div className="flex flex-col gap-0.5">
         <span className="text-sm text-muted">{nomDossier}</span>
-        <h1 className="text-[26px] font-bold leading-8 text-heading">Bonjour {prenom}</h1>
+                <h1 className="text-[26px] font-bold leading-8 text-heading">Bonjour {prenom}</h1>
       </div>
+
+      {resume}
 
       {demandes.length > 0 && (
         <section aria-labelledby="titre-attente" className="overflow-hidden rounded-2xl border border-warning-line bg-surface">

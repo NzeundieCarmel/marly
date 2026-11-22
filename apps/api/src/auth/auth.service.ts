@@ -24,6 +24,7 @@ export interface ProfilUtilisateur {
   email: string | null;
   role: RoleMarly;
   cabinet: string;
+  autonome: boolean;
   dossier: { id: string; raisonSociale: string } | null;
 }
 
@@ -69,7 +70,7 @@ export class AuthService {
     const utilisateur = await this.prisma.utilisateur.findUnique({
       where: { id },
       include: {
-        cabinet: { select: { nom: true } },
+        cabinet: { select: { nom: true, autonome: true } },
         dossier: { select: { id: true, raisonSociale: true } },
       },
     });
@@ -84,6 +85,7 @@ export class AuthService {
       email: utilisateur.email,
       role: utilisateur.role,
       cabinet: utilisateur.cabinet.nom,
+      autonome: utilisateur.cabinet.autonome,
       dossier: utilisateur.dossier,
     };
   }

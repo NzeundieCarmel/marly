@@ -28,17 +28,36 @@ async function ContenuProfil() {
           <dd className="text-[15px]">{profil.dossier.raisonSociale}</dd>
         </div>
         <div className="flex flex-col gap-0.5 border-t border-line px-4 py-3">
-          <dt className="text-[13px] text-muted">Cabinet comptable</dt>
-          <dd className="text-[15px]">{profil.cabinet}</dd>
+          {profil.autonome ? (
+            <>
+              <dt className="text-[13px] text-muted">Comptable</dt>
+              <dd className="text-[15px]">Aucun pour l&apos;instant</dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-[13px] text-muted">Cabinet comptable</dt>
+              <dd className="text-[15px]">{profil.cabinet}</dd>
+            </>
+          )}
         </div>
       </dl>
 
       <section aria-labelledby="titre-donnees" className="flex flex-col gap-2 rounded-2xl bg-sunken p-4">
         <h2 id="titre-donnees" className="text-base font-bold">Vos données</h2>
         <p className="text-sm leading-5 text-muted">
-          Vos pièces ne sont visibles que par vous et par votre cabinet comptable. L&apos;équipe Marly
-          ne les consulte que pour vous dépanner, à votre demande. Marly ne transmet rien aux impôts :
-          votre comptable fait vos déclarations comme d&apos;habitude.
+          {profil.autonome ? (
+            <>
+              Vos pièces ne sont visibles que par vous. L&apos;équipe Marly ne les consulte que pour
+              vous dépanner, à votre demande. Marly range et résume vos pièces, mais ne transmet rien
+              aux impôts et ne fait pas vos déclarations.
+            </>
+          ) : (
+            <>
+              Vos pièces ne sont visibles que par vous et par votre cabinet comptable. L&apos;équipe
+              Marly ne les consulte que pour vous dépanner, à votre demande. Marly ne transmet rien
+              aux impôts : votre comptable fait vos déclarations comme d&apos;habitude.
+            </>
+          )}
         </p>
       </section>
 

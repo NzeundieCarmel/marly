@@ -4,14 +4,26 @@ import { Suspense } from "react";
 import { lireProfil, listerDemandes, listerPieces, type StatutPiece } from "@/lib/api";
 import { formatJourMois, joursAvant } from "@/lib/echeances";
 import { formatMontant, prenom } from "@/lib/format";
+import { resumerMois } from "@/lib/resume-mois";
 import { CadreTelephone } from "@/components/cadre-telephone";
+import { CarteResumeMois } from "@/components/carte-resume-mois";
 import { EcranEnvoi, type DernierEnvoi } from "./ecran-envoi";
 
-const ETAT_DERNIER: Record<StatutPiece, { texte: string; reussi: boolean }> = {
+type Etats = Record<StatutPiece, { texte: string; reussi: boolean }>;
+
+const ETAT_CABINET: Etats = {
   EN_ATTENTE: { texte: "En attente", reussi: false },
   RECUE: { texte: "Reçue par le cabinet", reussi: false },
   A_COMPLETER: { texte: "Le cabinet demande une nouvelle photo", reussi: false },
   TRAITEE: { texte: "Traitée par le cabinet", reussi: true },
+  REMPLACEE: { texte: "Remplacée", reussi: false },
+};
+
+const ETAT_AUTONOME: Etats = {
+  EN_ATTENTE: { texte: "En attente", reussi: false },
+  RECUE: { texte: "Rangée dans vos pièces", reussi: true },
+  A_COMPLETER: { texte: "À reprendre", reussi: false },
+  TRAITEE: { texte: "Rangée dans vos pièces", reussi: true },
   REMPLACEE: { texte: "Remplacée", reussi: false },
 };
 
@@ -37,6 +49,7 @@ async function ContenuEnvoi() {
     }`;
   }
 
+  const etats = profil.autonome ? ETAT_AUTONOME : ETAT_CABINET;
   const recentes = pieces
     .filter((p) => p.statut !== "REMPLACEE")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -44,8 +57,8 @@ async function ContenuEnvoi() {
   const dernier: DernierEnvoi | null = derniere
     ? {
         titre: `${derniere.fournisseur ?? derniere.categorie} · ${formatMontant(derniere.montantTtc)} FCFA`,
-        detail: ETAT_DERNIER[derniere.statut].texte,
-        reussi: ETAT_DERNIER[derniere.statut].reussi,
+        detail: etats[derniere.statut].texte,
+        reussi: etats[derniere.statut].reussi,
       }
     : null;
 
@@ -58,6 +71,8 @@ async function ContenuEnvoi() {
         demandes={ouvertes.map((d) => ({ id: d.id, description: d.description, aReprendre: d.pieceId !== null }))}
         echeanceTexte={echeanceTexte}
         dernier={dernier}
+        autonome={profil.autonome}
+        resume={profil.autonome ? <CarteResumeMois resume={resumerMois(pieces, maintenant)} /> : null}
       />
     </CadreTelephone>
   );

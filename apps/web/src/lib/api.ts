@@ -22,6 +22,7 @@ export interface Profil {
   email: string | null;
   role: RoleMarly;
   cabinet: string;
+  autonome: boolean;
   dossier: { id: string; raisonSociale: string } | null;
 }
 
