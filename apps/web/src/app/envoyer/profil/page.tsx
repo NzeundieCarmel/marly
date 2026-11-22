@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { lireProfil } from "@/lib/api";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { seDeconnecter } from "@/app/connexion/actions";
+import Link from "next/link";
 
 async function ContenuProfil() {
   const profil = await lireProfil();
@@ -30,8 +31,13 @@ async function ContenuProfil() {
         <div className="flex flex-col gap-0.5 border-t border-line px-4 py-3">
           {profil.autonome ? (
             <>
-              <dt className="text-[13px] text-muted">Comptable</dt>
-              <dd className="text-[15px]">Aucun pour l&apos;instant</dd>
+            <dt className="text-[13px] text-muted">Comptable</dt>
+              <dd className="flex items-center justify-between gap-3 text-[15px]">
+                <span>Aucun pour l&apos;instant</span>
+                <Link href="/envoyer/comptable" className="font-bold text-link underline">
+                  Trouver un comptable
+                </Link>
+              </dd>
             </>
           ) : (
             <>

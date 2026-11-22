@@ -24,6 +24,7 @@ const pieces = [
 
 async function main(): Promise<void> {
   // Ordre de suppression : des tables qui dépendent vers celles dont on dépend
+  await prisma.demandeRattachement.deleteMany();
   await prisma.invitation.deleteMany();
   await prisma.lotExport.deleteMany();
   await prisma.demandePiece.deleteMany();
@@ -36,7 +37,7 @@ async function main(): Promise<void> {
   const echeance = prochaineEcheance(new Date());
 
   const cabinet = await prisma.cabinet.create({
-    data: { nom: 'Cabinet Ngando & Associés' },
+    data: { nom: 'Cabinet Ngando & Associés', partenaire: true, ville: 'Douala' },
   });
 
   const marc = await prisma.utilisateur.create({

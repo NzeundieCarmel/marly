@@ -240,3 +240,29 @@ export interface TableauDeBord {
 export function lireTableauDeBord(): Promise<TableauDeBord> {
   return appelerApi<TableauDeBord>("/tableau-de-bord");
 }
+
+
+export interface Comptable {
+  id: string;
+  nom: string;
+  ville: string | null;
+}
+
+export type StatutRattachement = "EN_ATTENTE" | "ACCEPTEE" | "REFUSEE" | "ANNULEE";
+
+export interface MonRattachement {
+  id: string;
+  statut: StatutRattachement;
+  cabinet: string;
+  message: string | null;
+  creeLe: string;
+  traiteeLe: string | null;
+}
+
+export function listerComptables(): Promise<Comptable[]> {
+  return appelerApi<Comptable[]>("/comptables");
+}
+
+export async function lireMonRattachement(): Promise<MonRattachement | null> {
+  return (await appelerApi<{ demande: MonRattachement | null }>("/rattachements/mien")).demande;
+}

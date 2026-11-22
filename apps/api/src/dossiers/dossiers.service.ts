@@ -19,11 +19,11 @@ export class DossiersService {
 
   // Dossiers autorisés : ceux du cabinet, et pour une PME uniquement le sien
   private filtreAcces(utilisateur: ChargeJeton): Prisma.DossierWhereInput {
+    // PME : uniquement son dossier, inscrit et signé dans son jeton.
+    // Le cabinet n'est pas vérifié ici : une entreprise autonome peut rejoindre
+    // un cabinet pendant que le jeton de son gérant est encore valide.
     if (utilisateur.role === 'PME') {
-      return {
-        cabinetId: utilisateur.cabinetId,
-        id: utilisateur.dossierId ?? 'aucun-dossier',
-      };
+      return { id: utilisateur.dossierId ?? 'aucun-dossier' };
     }
     return { cabinetId: utilisateur.cabinetId };
   }

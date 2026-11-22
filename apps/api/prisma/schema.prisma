@@ -39,50 +39,63 @@ enum StatutInvitation {
   ANNULEE
 }
 
+enum StatutRattachement {
+  EN_ATTENTE
+  ACCEPTEE
+  REFUSEE
+  ANNULEE
+}
+
 model Cabinet {
-  id           String        @id @default(cuid())
-  nom          String
-  niu          String?
-  autonome     Boolean        @default(false)
-  creeLe       DateTime      @default(now())
-  utilisateurs Utilisateur[]
-  dossiers     Dossier[]
-  invitations  Invitation[]
+  id            String                @id @default(cuid())
+  nom           String
+  niu           String?
+  autonome      Boolean               @default(false)
+  partenaire    Boolean               @default(false)
+  ville         String?
+  rattachements DemandeRattachement[]
+  creeLe        DateTime              @default(now())
+  utilisateurs  Utilisateur[]
+  dossiers      Dossier[]
+  invitations   Invitation[]
 }
 
 model Utilisateur {
-  id              String         @id @default(cuid())
-  nom             String
-  email           String?        @unique
-  telephone       String?        @unique
-  motDePasseHache String
-  role            Role
-  cabinet         Cabinet        @relation(fields: [cabinetId], references: [id])
-  cabinetId       String
-  dossier         Dossier?       @relation(fields: [dossierId], references: [id])
-  dossierId       String?
-  piecesValidees  Piece[]        @relation("PiecesValidees")
-  demandesCreees  DemandePiece[]
-  lotsExport      LotExport[]
-  invitationsCreees Invitation[]
-  creeLe          DateTime       @default(now())
+  id                   String                @id @default(cuid())
+  nom                  String
+  email                String?               @unique
+  telephone            String?               @unique
+  motDePasseHache      String
+  role                 Role
+  cabinet              Cabinet               @relation(fields: [cabinetId], references: [id])
+  cabinetId            String
+  dossier              Dossier?              @relation(fields: [dossierId], references: [id])
+  dossierId            String?
+  piecesValidees       Piece[]               @relation("PiecesValidees")
+  demandesCreees       DemandePiece[]
+  lotsExport           LotExport[]
+  invitationsCreees    Invitation[]
+  rattachementsCrees   DemandeRattachement[] @relation("RattachementsCrees")
+  rattachementsTraites DemandeRattachement[] @relation("RattachementsTraites")
+  creeLe               DateTime              @default(now())
 }
 
 model Dossier {
-  id            String         @id @default(cuid())
+  id            String                @id @default(cuid())
   raisonSociale String
   niu           String?
   rccm          String?
   regime        Regime
-  tauxTva       Decimal        @default(19.25) @db.Decimal(5, 2)
-  cabinet       Cabinet        @relation(fields: [cabinetId], references: [id])
+  tauxTva       Decimal               @default(19.25) @db.Decimal(5, 2)
+  cabinet       Cabinet               @relation(fields: [cabinetId], references: [id])
   cabinetId     String
   pieces        Piece[]
   demandes      DemandePiece[]
   lotsExport    LotExport[]
   invitations   Invitation[]
+  rattachements DemandeRattachement[]
   utilisateurs  Utilisateur[]
-  creeLe        DateTime       @default(now())
+  creeLe        DateTime              @default(now())
 }
 
 model Piece {
@@ -176,6 +189,25 @@ model Invitation {
   creeParId  String
   creeLe     DateTime         @default(now())
   accepteeLe DateTime?
+
+  @@index([cabinetId, statut])
+  @@index([dossierId, statut])
+}
+
+model DemandeRattachement {
+  id          String             @id @default(cuid())
+  dossier     Dossier            @relation(fields: [dossierId], references: [id])
+  dossierId   String
+  cabinet     Cabinet            @relation(fields: [cabinetId], references: [id])
+  cabinetId   String
+  message     String?
+  statut      StatutRattachement @default(EN_ATTENTE)
+  creePar     Utilisateur        @relation("RattachementsCrees", fields: [creeParId], references: [id])
+  creeParId   String
+  traitePar   Utilisateur?       @relation("RattachementsTraites", fields: [traiteParId], references: [id])
+  traiteParId String?
+  creeLe      DateTime           @default(now())
+  traiteeLe   DateTime?
 
   @@index([cabinetId, statut])
   @@index([dossierId, statut])
