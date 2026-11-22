@@ -33,6 +33,7 @@ export interface Piece {
   fournisseur: string | null;
   categorie: string;
   statut: StatutPiece;
+  fichier: string | null;
 }
 
 export interface Demande {

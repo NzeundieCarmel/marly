@@ -1,34 +1,39 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { lireProfil, listerPieces, type Piece, type StatutPiece } from "@/lib/api";
+import { lireProfil, listerPieces, type Piece } from "@/lib/api";
 import { formatMontant } from "@/lib/format";
-import { resumerMois } from "@/lib/resume-mois";
+import { cleMois, resumerMois } from "@/lib/resume-mois";
+import { statutsPiece } from "@/lib/statuts-piece";
 import { CadreTelephone } from "@/components/cadre-telephone";
-import { Pastille, type Ton } from "@/components/pastille";
+import { Pastille } from "@/components/pastille";
 import { PiecesEnAttente } from "./en-attente";
+import { FiltresPieces } from "./filtres-pieces";
 
-type Statuts = Record<StatutPiece, { ton: Ton; texte: string }>;
+type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
-const STATUTS_CABINET: Statuts = {
-  EN_ATTENTE: { ton: "neutral", texte: "En attente" },
-  RECUE: { ton: "info", texte: "Reçue" },
-  A_COMPLETER: { ton: "warning", texte: "À compléter" },
-  TRAITEE: { ton: "success", texte: "Traitée" },
-  REMPLACEE: { ton: "neutral", texte: "Remplacée" },
-};
+function lireTexte(valeur: string | string[] | undefined): string {
+  return (Array.isArray(valeur) ? valeur[0] : (valeur ?? "")).trim().slice(0, 60);
+}
 
-const STATUTS_AUTONOME: Statuts = {
-  EN_ATTENTE: { ton: "neutral", texte: "En attente" },
-  RECUE: { ton: "success", texte: "Rangée" },
-  A_COMPLETER: { ton: "warning", texte: "À reprendre" },
-  TRAITEE: { ton: "success", texte: "Rangée" },
-  REMPLACEE: { ton: "neutral", texte: "Remplacée" },
-};
+// Recherche sans accents ni majuscules : « electricite » trouve « Électricité, eau »
+function simplifier(texte: string): string {
+  return texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
-function moisDe(piece: Piece): string {
-  const texte = new Date(piece.date).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+function libelleMois(cle: string): string {
+  const [annee, mois] = cle.split("-").map(Number);
+  const texte = new Date(Date.UTC(annee, mois - 1, 1)).toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
   return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+function totalDe(pieces: Piece[]): number {
+  return pieces.filter((p) => p.statut !== "REMPLACEE").reduce((somme, p) => somme + p.montantTtc, 0);
 }
 
 function Chiffre({ valeur, libelle, ton }: { valeur: number; libelle: string; ton: string }) {
@@ -40,35 +45,57 @@ function Chiffre({ valeur, libelle, ton }: { valeur: number; libelle: string; to
   );
 }
 
-async function ContenuPieces() {
+async function ContenuPieces({ recherche }: { recherche: Recherche }) {
   const profil = await lireProfil();
   if (!profil.dossier) {
     redirect("/dossiers");
   }
   const autonome = profil.autonome;
-  const statuts = autonome ? STATUTS_AUTONOME : STATUTS_CABINET;
+  const statuts = statutsPiece(autonome);
   const pieces = (await listerPieces(profil.dossier.id)).sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
   await connection();
   const ceMois = resumerMois(pieces, new Date());
 
+  // Critères de recherche lus dans l'adresse
+  const parametres = await recherche;
+  const moisChoisi = lireTexte(parametres.mois);
+  const choix = {
+    mois: /^\d{4}-\d{2}$/.test(moisChoisi) ? moisChoisi : "",
+    categorie: lireTexte(parametres.categorie),
+    q: lireTexte(parametres.q),
+  };
+  const filtreActif = Boolean(choix.mois || choix.categorie || choix.q);
+  const motCle = simplifier(choix.q);
+
+  const optionsMois = [...new Set(pieces.map((p) => cleMois(new Date(p.date), "UTC")))]
+    .sort()
+    .reverse()
+    .map((cle) => ({ valeur: cle, libelle: libelleMois(cle) }));
+  const categories = [...new Set(pieces.map((p) => p.categorie))].sort((a, b) => a.localeCompare(b, "fr"));
+
+  const trouvees = pieces.filter(
+    (p) =>
+      (!choix.mois || cleMois(new Date(p.date), "UTC") === choix.mois) &&
+      (!choix.categorie || p.categorie === choix.categorie) &&
+      (!motCle || simplifier(`${p.fournisseur ?? ""} ${p.categorie}`).includes(motCle)),
+  );
+
   const envoyees = pieces.filter((p) => p.statut !== "REMPLACEE").length;
   const traitees = pieces.filter((p) => p.statut === "TRAITEE").length;
   const aReprendre = pieces.filter((p) => p.statut === "A_COMPLETER").length;
 
-  // Regroupement par mois, du plus récent au plus ancien, avec le total du mois
-  const groupes: { mois: string; total: number; pieces: Piece[] }[] = [];
-  for (const p of pieces) {
-    const mois = moisDe(p);
-    let groupe = groupes.find((g) => g.mois === mois);
-    if (!groupe) {
-      groupe = { mois, total: 0, pieces: [] };
-      groupes.push(groupe);
-    }
-    groupe.pieces.push(p);
-    if (p.statut !== "REMPLACEE") groupe.total += p.montantTtc;
+  // Regroupement par mois, du plus récent au plus ancien
+  const groupes: { cle: string; pieces: Piece[] }[] = [];
+  for (const p of trouvees) {
+    const cle = cleMois(new Date(p.date), "UTC");
+    const groupe = groupes.find((g) => g.cle === cle);
+    if (groupe) groupe.pieces.push(p);
+    else groupes.push({ cle, pieces: [p] });
   }
+
+  const nbTrouvees = trouvees.filter((p) => p.statut !== "REMPLACEE").length;
 
   return (
     <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="pieces">
@@ -89,21 +116,40 @@ async function ContenuPieces() {
 
       <PiecesEnAttente />
 
-      {groupes.length === 0 ? (
+      {pieces.length > 0 && <FiltresPieces mois={optionsMois} categories={categories} choix={choix} />}
+
+      {filtreActif && trouvees.length > 0 && (
+        <p role="status" className="text-sm text-muted">
+          <strong className="text-ink">
+            {nbTrouvees} pièce{nbTrouvees > 1 ? "s" : ""}
+          </strong>{" "}
+          · <span className="tabular-nums">{formatMontant(totalDe(trouvees))} FCFA</span>
+        </p>
+      )}
+
+      {pieces.length === 0 ? (
         <p className="rounded-2xl border border-line bg-surface p-5 text-muted">
           Aucune pièce pour l&apos;instant. Touchez « Envoyer » en bas de l&apos;écran pour commencer.
         </p>
+      ) : trouvees.length === 0 ? (
+        <p role="status" className="rounded-2xl border border-line bg-surface p-5 text-muted">
+          Aucune pièce ne correspond à votre recherche.
+        </p>
       ) : (
         groupes.map((g) => (
-          <section key={g.mois} aria-label={g.mois} className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <section key={g.cle} aria-label={libelleMois(g.cle)} className="overflow-hidden rounded-2xl border border-line bg-surface">
             <div className="flex items-center justify-between gap-2 bg-sunken px-3.5 py-2.5 text-[13px] font-medium text-muted">
-              <span>{g.mois}</span>
-              <span className="tabular-nums">{formatMontant(g.total)} FCFA</span>
+              <span>{libelleMois(g.cle)}</span>
+              <span className="tabular-nums">{formatMontant(totalDe(g.pieces))} FCFA</span>
             </div>
             {g.pieces.map((p) => {
               const statut = statuts[p.statut];
               return (
-                <div key={p.id} className="flex items-center gap-3 border-t border-line px-3.5 py-3">
+                <Link
+                  key={p.id}
+                  href={`/envoyer/pieces/${encodeURIComponent(p.id)}`}
+                  className="flex items-center gap-3 border-t border-line px-3.5 py-3 hover:bg-survol"
+                >
                   <span className="flex min-w-0 flex-grow flex-col gap-0.5">
                     <span className="truncate text-[15px] font-medium">{p.fournisseur ?? p.categorie}</span>
                     <span className={`text-[13px] tabular-nums ${p.statut === "A_COMPLETER" ? "text-warning-ink" : "text-muted"}`}>
@@ -113,7 +159,7 @@ async function ContenuPieces() {
                     </span>
                   </span>
                   <Pastille ton={statut.ton}>{statut.texte}</Pastille>
-                </div>
+                </Link>
               );
             })}
           </section>
@@ -123,10 +169,10 @@ async function ContenuPieces() {
   );
 }
 
-export default function PageMesPieces() {
+export default function PageMesPieces({ searchParams }: { searchParams: Recherche }) {
   return (
     <Suspense fallback={<p className="p-6 text-muted">Chargement…</p>}>
-      <ContenuPieces />
+      <ContenuPieces recherche={searchParams} />
     </Suspense>
   );
 }
