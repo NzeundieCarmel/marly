@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { lireProfil, lireTableauDeBord, type Activite, type LigneTableau } from "@/lib/api";
+import {
+  lireProfil,
+  lireTableauDeBord,
+  listerRattachementsRecus,
+  type Activite,
+  type LigneTableau,
+} from "@/lib/api";
 import { formatJourMois, joursAvant, prochaineEcheance } from "@/lib/echeances";
 import { formatDateHeure, formatDateLongue, formatMontant, ilYa, initiales, prenom } from "@/lib/format";
 import { CoquilleCabinet } from "@/components/coquille-cabinet";
@@ -52,11 +58,13 @@ function Accueil() {
 }
 
 async function ContenuTableau({ searchParams }: { searchParams: Promise<{ filtre?: string }> }) {
-  const [{ filtre: brut }, profil, tableau] = await Promise.all([
+   const [{ filtre: brut }, profil, tableau, demandesEntreprises] = await Promise.all([
     searchParams,
     lireProfil(),
     lireTableauDeBord(),
+    listerRattachementsRecus(),
   ]);
+  const nbDemandes = demandesEntreprises.length;
   const filtre: Filtre =
     brut === "relancer" || brut === "valider" || brut === "exporter" ? brut : null;
 
@@ -96,6 +104,7 @@ async function ContenuTableau({ searchParams }: { searchParams: Promise<{ filtre
       profil={profil}
       aValider={stats.aValider}
       lienAValider={lienAValider}
+      demandes={nbDemandes}
       actif={filtre === "exporter" ? "exports" : "tableau"}
     >
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -108,8 +117,23 @@ async function ContenuTableau({ searchParams }: { searchParams: Promise<{ filtre
         <Link href="/dossiers/nouveau" className={BOUTON_PRINCIPAL}>
           <IconePlus width={18} height={18} />
           Nouveau dossier
-        </Link>
+          </Link>
       </header>
+
+      {nbDemandes > 0 && (
+        <Link
+          href="/dossiers/demandes"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-info-bg px-6 py-4 text-info-ink hover:opacity-90"
+        >
+          <span>
+            <strong>
+              {nbDemandes} entreprise{nbDemandes > 1 ? "s demandent" : " demande"}
+            </strong>{" "}
+            à rejoindre votre cabinet.
+          </span>
+          <span className="font-bold underline">Voir les demandes</span>
+        </Link>
+      )}
 
       {dossiers.length === 0 ? (
         <Accueil />

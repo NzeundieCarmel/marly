@@ -57,8 +57,8 @@ export class RattachementsController {
     return this.service.annuler(id, utilisateur);
   }
 
-  // Côté cabinet : seul le responsable décide
-  @Roles('RESPONSABLE')
+  // Côté cabinet : toute l'équipe voit les demandes, seul le responsable décide
+  @Roles('RESPONSABLE', 'COMPTABLE')
   @Get('rattachements')
   recues(
     @UtilisateurCourant() utilisateur: ChargeJeton,

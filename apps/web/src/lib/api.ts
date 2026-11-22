@@ -266,3 +266,16 @@ export function listerComptables(): Promise<Comptable[]> {
 export async function lireMonRattachement(): Promise<MonRattachement | null> {
   return (await appelerApi<{ demande: MonRattachement | null }>("/rattachements/mien")).demande;
 }
+
+
+export interface RattachementRecu {
+  id: string;
+  message: string | null;
+  creeLe: string;
+  dossier: { id: string; raisonSociale: string; regime: Regime; nbPieces: number };
+  gerant: { nom: string; email: string | null };
+}
+
+export function listerRattachementsRecus(): Promise<RattachementRecu[]> {
+  return appelerApi<RattachementRecu[]>("/rattachements");
+}

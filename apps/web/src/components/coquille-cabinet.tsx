@@ -6,6 +6,7 @@ import { seDeconnecter } from "@/app/connexion/actions";
 import { BoutonTheme } from "./bouton-theme";
 import {
   IconeDossiers,
+  IconeEnvoyer,
   IconeEquipe,
   IconeExport,
   IconeSortie,
@@ -14,7 +15,7 @@ import {
   Monogramme,
 } from "./icones";
 
-export type Rubrique = "tableau" | "valider" | "dossiers" | "exports" | "equipe";
+export type Rubrique = "tableau" | "valider" | "dossiers" | "demandes" | "exports" | "equipe";
 
 const BASE = "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px]";
 const ACTIF = `${BASE} bg-nav-active font-bold text-white`;
@@ -23,22 +24,25 @@ const INACTIF = `${BASE} text-nav-ink hover:bg-nav-active hover:text-white`;
 export function CoquilleCabinet({
   profil,
   aValider,
+  demandes,
   lienAValider,
   actif,
   children,
 }: {
   profil: Profil;
   aValider: number;
+  demandes: number;
   lienAValider: string;
   actif: Rubrique;
   children: ReactNode;
 }) {
-  const liens: { cle: Rubrique; href: string; libelle: string; Icone: typeof IconeTableau }[] = [
-    { cle: "tableau", href: "/dossiers", libelle: "Tableau de bord", Icone: IconeTableau },
-    { cle: "valider", href: lienAValider, libelle: "Pièces à valider", Icone: IconeValider },
-    { cle: "dossiers", href: "/dossiers#dossiers", libelle: "Dossiers clients", Icone: IconeDossiers },
-    { cle: "exports", href: "/dossiers?filtre=exporter#dossiers", libelle: "Exports Sage", Icone: IconeExport },
-    { cle: "equipe", href: "/equipe", libelle: "Équipe", Icone: IconeEquipe },
+  const liens: { cle: Rubrique; href: string; libelle: string; Icone: typeof IconeTableau; compteur: number }[] = [
+    { cle: "tableau", href: "/dossiers", libelle: "Tableau de bord", Icone: IconeTableau, compteur: 0 },
+    { cle: "valider", href: lienAValider, libelle: "Pièces à valider", Icone: IconeValider, compteur: aValider },
+    { cle: "dossiers", href: "/dossiers#dossiers", libelle: "Dossiers clients", Icone: IconeDossiers, compteur: 0 },
+    { cle: "demandes", href: "/dossiers/demandes", libelle: "Demandes d'entreprises", Icone: IconeEnvoyer, compteur: demandes },
+    { cle: "exports", href: "/dossiers?filtre=exporter#dossiers", libelle: "Exports Sage", Icone: IconeExport, compteur: 0 },
+    { cle: "equipe", href: "/equipe", libelle: "Équipe", Icone: IconeEquipe, compteur: 0 },
   ];
 
   return (
@@ -50,7 +54,7 @@ export function CoquilleCabinet({
         </Link>
 
         <nav aria-label="Menu du cabinet" className="flex flex-col gap-1">
-          {liens.map(({ cle, href, libelle, Icone }) => (
+          {liens.map(({ cle, href, libelle, Icone, compteur }) => (
             <Link
               key={cle}
               href={href}
@@ -59,9 +63,9 @@ export function CoquilleCabinet({
             >
               <Icone />
               <span className="flex-grow">{libelle}</span>
-              {cle === "valider" && aValider > 0 && (
+              {compteur > 0 && (
                 <span className="rounded-full bg-accent-500 px-2 py-0.5 text-xs font-bold text-brand-900">
-                  {aValider}
+                  {compteur}
                 </span>
               )}
             </Link>
