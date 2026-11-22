@@ -43,6 +43,7 @@ model Cabinet {
   id           String        @id @default(cuid())
   nom          String
   niu          String?
+  autonome     Boolean        @default(false)
   creeLe       DateTime      @default(now())
   utilisateurs Utilisateur[]
   dossiers     Dossier[]

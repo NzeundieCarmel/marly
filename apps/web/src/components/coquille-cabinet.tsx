@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Profil } from "@/lib/api";
 import { initiales } from "@/lib/format";
 import { seDeconnecter } from "@/app/connexion/actions";
+import { BoutonTheme } from "./bouton-theme";
 import {
   IconeDossiers,
   IconeEquipe,
@@ -75,6 +76,7 @@ export function CoquilleCabinet({
             <span className="truncate text-sm font-bold">{profil.nom}</span>
             <span className="truncate text-[13px] text-nav-ink">{profil.cabinet}</span>
           </span>
+          <BoutonTheme variante="nav" />
           <form action={seDeconnecter}>
             <button
               type="submit"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { initiales } from "@/lib/format";
+import { BoutonTheme } from "./bouton-theme";
 import { IconeAppareil, IconePiece, IconeProfil, Monogramme } from "./icones";
 
 export type Onglet = "envoyer" | "pieces" | "profil";
@@ -27,13 +28,16 @@ export function CadreTelephone({
           <Monogramme taille={32} />
           <span className="text-xl font-bold text-heading">Marly</span>
         </Link>
-        <span
-          title={nomDossier}
-          aria-label={nomDossier}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-info-bg text-[13px] font-bold text-info-ink"
-        >
-          {initiales(nomDossier)}
-        </span>
+        <div className="flex items-center gap-1">
+          <BoutonTheme />
+          <span
+            title={nomDossier}
+            aria-label={nomDossier}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-info-bg text-[13px] font-bold text-info-ink"
+          >
+            {initiales(nomDossier)}
+          </span>
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-[18px] px-5 py-5">{children}</main>

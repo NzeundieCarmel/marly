@@ -23,6 +23,13 @@ export default function PageInscription() {
           Se connecter
         </Link>
       </p>
+
+      <p className="text-center text-[13px] text-muted">
+        Vous êtes une entreprise sans comptable ?{" "}
+        <Link href="/inscription/entreprise" className="font-bold text-link underline">
+          Créez votre espace
+        </Link>
+      </p>
     </CadreAccueil>
   );
 }

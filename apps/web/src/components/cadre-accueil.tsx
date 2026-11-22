@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Monogramme } from "./icones";
+import { BoutonTheme } from "./bouton-theme";
 
 // Bandeau bleu Marly avec le motif des points verts, puis le contenu :
 // invitation, inscription, connexion
@@ -23,6 +24,9 @@ export function CadreAccueil({ titre, children }: { titre: string; children: Rea
             <circle cx="338" cy="116" r="5" fill="#2BB673" />
             <rect x="300" y="150" width="140" height="96" rx="16" fill="#2BB673" />
           </svg>
+          <div className="absolute right-3 top-3 z-10">
+            <BoutonTheme variante="bandeau" />
+          </div>
           <div className="absolute bottom-6 left-5 flex flex-col gap-3.5 pr-28">
             <Monogramme taille={48} inverse />
             <h1 className="text-[28px] font-bold leading-[34px] text-white">{titre}</h1>

@@ -49,7 +49,7 @@
 
 /* Theme sombre : suit le reglage du telephone ou de l'ordinateur */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg-page: #0E1726;
     --bg-surface: #152235;
@@ -81,6 +81,40 @@
     --nav-line: #26354D;
     --identity: #2A5590;
   }
+}
+
+/* Thème sombre choisi avec le bouton, quel que soit le réglage de l'appareil */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page: #0E1726;
+  --bg-surface: #152235;
+  --bg-sunken: #0B1320;
+  --bg-hover: #1B2A42;
+  --ink: #E8EDF5;
+  --ink-muted: #A3AEC0;
+  --ink-heading: #E8EDF5;
+  --ink-link: #8CB4F0;
+  --line: #26354D;
+  --line-strong: #64748F;
+  --action-primary: #2F5EA8;
+  --action-primary-hover: #3A6BBA;
+  --focus: #9CC0F5;
+  --success-bg: #12382A;
+  --success-ink: #6FD9A6;
+  --info-bg: #16294A;
+  --info-ink: #9CC0F5;
+  --warning-bg: #3A2A0E;
+  --warning-ink: #F4C26B;
+  --warning-line: #6B4F1A;
+  --danger-bg: #3D1A1C;
+  --danger-ink: #F49A9A;
+  --neutral-bg: #1E2A3D;
+  --neutral-ink: #A3AEC0;
+  --nav: #0B1320;
+  --nav-ink: #C9D3E2;
+  --nav-active: #1B2A42;
+  --nav-line: #26354D;
+  --identity: #2A5590;
 }
 
 @theme inline {

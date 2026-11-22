@@ -22,8 +22,11 @@ export default function PageConnexion() {
       </p>
 
       <p className="mt-auto text-center text-[13px] leading-[19px] text-muted">
-        Vous êtes une entreprise ? Votre accès se crée avec le lien d&apos;invitation envoyé par
-        votre cabinet comptable.
+        Vous êtes une entreprise ? Votre cabinet vous envoie un lien d&apos;invitation. Pas de
+        comptable ?{" "}
+        <Link href="/inscription/entreprise" className="font-bold text-link underline">
+          Créez l&apos;espace de votre entreprise
+        </Link>
       </p>
     </CadreAccueil>
   );

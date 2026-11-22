@@ -10,10 +10,21 @@ import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
-import { InscriptionDto } from './dto/inscription.dto';
+import {
+  InscriptionDto,
+  InscriptionEntrepriseDto,
+} from './dto/inscription.dto';
 
 const UNE_HEURE_MS = 3_600_000;
 const CLE_GLOBALE = '*';
+const EMAIL_PRIS = 'Un compte existe déjà avec cette adresse e-mail';
+
+interface Session {
+  id: string;
+  role: 'RESPONSABLE' | 'PME';
+  cabinetId: string;
+  dossierId: string | null;
+}
 
 @Injectable()
 export class InscriptionService {
@@ -44,17 +55,15 @@ export class InscriptionService {
     const toutes = recentes(CLE_GLOBALE);
     if (parIp.length >= this.maxParIp || toutes.length >= this.maxGlobal) {
       throw new HttpException(
-        "Trop de tentatives d'inscription. Réessaie dans une heure.",
+        "Trop de tentatives d'inscription. Réessayez dans une heure.",
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
-
     parIp.push(maintenant);
     toutes.push(maintenant);
     this.tentatives.set(ip, parIp);
     this.tentatives.set(CLE_GLOBALE, toutes);
 
-    // Évite que la liste grossisse sans fin
     if (this.tentatives.size > 10_000) {
       for (const [cle, liste] of this.tentatives) {
         if (liste.every((t) => maintenant - t >= UNE_HEURE_MS))
@@ -63,29 +72,57 @@ export class InscriptionService {
     }
   }
 
-  async inscrire(dto: InscriptionDto, ip: string): Promise<{ jeton: string }> {
+  // Contrôles communs aux deux inscriptions
+  private async preparer(
+    ip: string,
+    email: string,
+    siteWeb: string | undefined,
+    motDePasse: string,
+  ) {
     this.limiter(ip);
-
-    if (dto.siteWeb) {
+    if (siteWeb) {
       throw new BadRequestException('Inscription refusée');
     }
-
     const existant = await this.prisma.utilisateur.findUnique({
-      where: { email: dto.email },
+      where: { email },
       select: { id: true },
     });
     if (existant) {
-      throw new ConflictException(
-        'Un compte existe déjà avec cette adresse e-mail',
-      );
+      throw new ConflictException(EMAIL_PRIS);
     }
+    return hash(motDePasse, 10);
+  }
 
-    const motDePasseHache = await hash(dto.motDePasse, 10);
+  private async emettre(session: Session): Promise<{ jeton: string }> {
+    const jeton = await this.jwt.signAsync(
+      {
+        sub: session.id,
+        role: session.role,
+        cabinetId: session.cabinetId,
+        dossierId: session.dossierId,
+      },
+      { expiresIn: this.dureeSecondes },
+    );
+    return { jeton };
+  }
 
-    let utilisateur: { id: string; cabinetId: string };
+  private emailDejaPris(erreur: unknown): boolean {
+    return (
+      erreur instanceof Prisma.PrismaClientKnownRequestError &&
+      erreur.code === 'P2002'
+    );
+  }
+
+  // Un cabinet et son responsable
+  async inscrire(dto: InscriptionDto, ip: string): Promise<{ jeton: string }> {
+    const motDePasseHache = await this.preparer(
+      ip,
+      dto.email,
+      dto.siteWeb,
+      dto.motDePasse,
+    );
     try {
-      // Le cabinet et son responsable sont créés ensemble, ou pas du tout
-      utilisateur = await this.prisma.utilisateur.create({
+      const utilisateur = await this.prisma.utilisateur.create({
         data: {
           nom: dto.nomResponsable,
           email: dto.email,
@@ -95,28 +132,64 @@ export class InscriptionService {
         },
         select: { id: true, cabinetId: true },
       });
-    } catch (erreur) {
-      // Deux inscriptions simultanées avec le même e-mail
-      if (
-        erreur instanceof Prisma.PrismaClientKnownRequestError &&
-        erreur.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'Un compte existe déjà avec cette adresse e-mail',
-        );
-      }
-      throw erreur;
-    }
-
-    const jeton = await this.jwt.signAsync(
-      {
-        sub: utilisateur.id,
+      return this.emettre({
+        id: utilisateur.id,
         role: 'RESPONSABLE',
         cabinetId: utilisateur.cabinetId,
         dossierId: null,
-      },
-      { expiresIn: this.dureeSecondes },
+      });
+    } catch (erreur) {
+      if (this.emailDejaPris(erreur)) throw new ConflictException(EMAIL_PRIS);
+      throw erreur;
+    }
+  }
+
+  // Une entreprise seule : son espace autonome, son dossier, son gérant
+  async inscrireEntreprise(
+    dto: InscriptionEntrepriseDto,
+    ip: string,
+  ): Promise<{ jeton: string }> {
+    const motDePasseHache = await this.preparer(
+      ip,
+      dto.email,
+      dto.siteWeb,
+      dto.motDePasse,
     );
-    return { jeton };
+    try {
+      const utilisateur = await this.prisma.$transaction(async (tx) => {
+        const espace = await tx.cabinet.create({
+          data: { nom: dto.raisonSociale, autonome: true },
+          select: { id: true },
+        });
+        const dossier = await tx.dossier.create({
+          data: {
+            raisonSociale: dto.raisonSociale,
+            regime: dto.regime,
+            cabinetId: espace.id,
+          },
+          select: { id: true },
+        });
+        return tx.utilisateur.create({
+          data: {
+            nom: dto.nomGerant,
+            email: dto.email,
+            motDePasseHache,
+            role: 'PME',
+            cabinetId: espace.id,
+            dossierId: dossier.id,
+          },
+          select: { id: true, cabinetId: true, dossierId: true },
+        });
+      });
+      return this.emettre({
+        id: utilisateur.id,
+        role: 'PME',
+        cabinetId: utilisateur.cabinetId,
+        dossierId: utilisateur.dossierId,
+      });
+    } catch (erreur) {
+      if (this.emailDejaPris(erreur)) throw new ConflictException(EMAIL_PRIS);
+      throw erreur;
+    }
   }
 }
