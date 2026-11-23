@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 import { initiales } from "@/lib/format";
 import { BoutonTheme } from "./bouton-theme";
 import { IconeAppareil, IconePiece, IconeProfil, Monogramme } from "./icones";
+import { IconeFacture } from "./icone-facture";
 
-export type Onglet = "envoyer" | "pieces" | "profil";
+export type Onglet = "envoyer" | "pieces" | "factures" | "profil";
 
 const ONGLETS: { cle: Onglet; href: string; libelle: string; Icone: typeof IconeAppareil }[] = [
   { cle: "envoyer", href: "/envoyer", libelle: "Envoyer", Icone: IconeAppareil },
   { cle: "pieces", href: "/envoyer/pieces", libelle: "Mes pièces", Icone: IconePiece },
+  { cle: "factures", href: "/envoyer/factures", libelle: "Factures", Icone: IconeFacture },
   { cle: "profil", href: "/envoyer/profil", libelle: "Profil", Icone: IconeProfil },
 ];
 
@@ -51,7 +53,7 @@ export function CadreTelephone({
             key={cle}
             href={href}
             aria-current={actif === cle ? "page" : undefined}
-            className={`flex min-h-12 min-w-24 flex-col items-center justify-center gap-1 text-xs ${
+            className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-xs ${
               actif === cle ? "font-bold text-heading" : "font-medium text-muted"
             }`}
           >

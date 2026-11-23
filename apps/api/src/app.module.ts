@@ -1,3 +1,4 @@
+import { FacturationModule } from './facturation/facturation.module';
 import { RattachementsModule } from './rattachements/rattachements.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -22,6 +23,7 @@ import { TableauDeBordModule } from './tableau-de-bord/tableau-de-bord.module';
     ExportsModule,
     TableauDeBordModule,
     RattachementsModule,
+    FacturationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

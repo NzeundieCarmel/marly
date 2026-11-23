@@ -279,3 +279,49 @@ export interface RattachementRecu {
 export function listerRattachementsRecus(): Promise<RattachementRecu[]> {
   return appelerApi<RattachementRecu[]>("/rattachements");
 }
+
+
+export interface FicheFacturation {
+  formeJuridique: string | null;
+  adresse: string | null;
+  telephone: string | null;
+  email: string | null;
+  centreImpots: string | null;
+  banque: string | null;
+  compte: string | null;
+  conditionsPaiement: string | null;
+  penalitesRetard: string | null;
+}
+
+export interface ProfilEmetteur {
+  raisonSociale: string;
+  regime: Regime;
+  tauxTva: number;
+  niu: string | null;
+  rccm: string | null;
+  autonome: boolean;
+  fiche: FicheFacturation;
+  manquants: string[];
+}
+
+export interface ClientFacture {
+  id: string;
+  nom: string;
+  adresse: string | null;
+  niu: string | null;
+  telephone: string | null;
+  email: string | null;
+}
+
+export function lireProfilEmetteur(): Promise<ProfilEmetteur> {
+  return appelerApi<ProfilEmetteur>("/facturation/profil");
+}
+
+export function listerClientsFacture(q?: string): Promise<ClientFacture[]> {
+  const filtre = q ? `?q=${encodeURIComponent(q)}` : "";
+  return appelerApi<ClientFacture[]>(`/facturation/clients${filtre}`);
+}
+
+export function lireClientFacture(id: string): Promise<ClientFacture> {
+  return appelerApi<ClientFacture>(`/facturation/clients/${encodeURIComponent(id)}`);
+}
