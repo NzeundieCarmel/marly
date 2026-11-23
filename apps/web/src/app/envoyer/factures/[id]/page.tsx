@@ -76,6 +76,13 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
         </p>
       )}
 
+        <Link
+        href={`/envoyer/factures/${facture.id}/document`}
+        className="flex h-12 items-center justify-center rounded-xl border border-line-strong bg-surface text-[15px] font-bold text-ink hover:bg-survol"
+      >
+        {facture.statut === "BROUILLON" ? "Aperçu du document" : "Voir, imprimer ou envoyer"}
+      </Link>
+
       {facture.statut === "BROUILLON" ? (
         <>
           <EditeurFacture

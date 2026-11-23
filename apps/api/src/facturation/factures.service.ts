@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
 import type { ChargeJeton } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FactureDto } from './dto/facture.dto';
@@ -54,6 +55,29 @@ export interface FactureDetail extends FactureResume {
   }[];
   factureOrigine: { id: string; numero: string | null } | null;
   avoir: { id: string; numero: string | null } | null;
+  jetonPartage: string | null;
+}
+
+// Ce que voit le client par le lien public : aucun identifiant interne
+export interface FactureDocument {
+  type: TypeFacture;
+  statut: 'BROUILLON' | 'EMISE' | 'ANNULEE';
+  numero: string | null;
+  dateEmission: Date | null;
+  dateEcheance: Date | null;
+  regime: Regime;
+  tauxTva: number;
+  tauxRetenue: number;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+  retenue: number;
+  netAPayer: number;
+  client: ClientFige;
+  emetteur: Prisma.JsonValue;
+  lignes: FactureDetail['lignes'];
+  factureOrigine: { numero: string | null } | null;
+  avoir: { numero: string | null } | null;
 }
 
 const MAXIMUM = 2_000_000_000;
@@ -156,6 +180,7 @@ function versDetail(f: FactureComplete): FactureDetail {
     factureOrigine: f.factureOrigine,
     avoir: f.avoir,
     creeLe: f.creeLe,
+    jetonPartage: f.jetonPartage,
   };
 }
 
@@ -494,5 +519,72 @@ export class FacturesService {
       return avoir.id;
     });
     return this.lire(utilisateur, avoirId);
+  }
+
+  // Lien public à envoyer au client : 256 bits aléatoires, impossibles à deviner
+  async partager(
+    utilisateur: ChargeJeton,
+    id: string,
+  ): Promise<{ jeton: string }> {
+    const facture = await this.charger(this.dossierDe(utilisateur), id);
+    if (facture.statut === 'BROUILLON') {
+      throw new ConflictException(
+        "Un brouillon ne se partage pas. Émettez d'abord la facture.",
+      );
+    }
+    if (facture.jetonPartage) return { jeton: facture.jetonPartage };
+    const jeton = randomBytes(32).toString('base64url');
+    await this.prisma.facture.update({
+      where: { id },
+      data: { jetonPartage: jeton },
+    });
+    return { jeton };
+  }
+
+  async desactiverPartage(
+    utilisateur: ChargeJeton,
+    id: string,
+  ): Promise<{ id: string }> {
+    await this.charger(this.dossierDe(utilisateur), id);
+    await this.prisma.facture.update({
+      where: { id },
+      data: { jetonPartage: null },
+    });
+    return { id };
+  }
+
+  async lirePublic(jeton: string): Promise<FactureDocument> {
+    // Un jeton mal formé ne déclenche même pas de requête
+    if (!/^[A-Za-z0-9_-]{43}$/.test(jeton))
+      throw new NotFoundException('Facture introuvable');
+    const f = await this.prisma.facture.findUnique({
+      where: { jetonPartage: jeton },
+      include: INCLURE,
+    });
+    if (!f || f.statut === 'BROUILLON')
+      throw new NotFoundException('Facture introuvable');
+    const d = versDetail(f);
+    return {
+      type: d.type,
+      statut: d.statut,
+      numero: d.numero,
+      dateEmission: d.dateEmission,
+      dateEcheance: d.dateEcheance,
+      regime: d.regime,
+      tauxTva: d.tauxTva,
+      tauxRetenue: d.tauxRetenue,
+      totalHt: d.totalHt,
+      totalTva: d.totalTva,
+      totalTtc: d.totalTtc,
+      retenue: d.retenue,
+      netAPayer: d.netAPayer,
+      client: d.clientDetail,
+      emetteur: d.emetteur,
+      lignes: d.lignes,
+      factureOrigine: d.factureOrigine
+        ? { numero: d.factureOrigine.numero }
+        : null,
+      avoir: d.avoir ? { numero: d.avoir.numero } : null,
+    };
   }
 }

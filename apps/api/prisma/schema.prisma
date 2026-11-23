@@ -288,7 +288,8 @@ model Facture {
   creeParId        String
   creeLe           DateTime       @default(now())
   emiseLe          DateTime?
-
+  jetonPartage     String?        @unique
+  
   @@unique([dossierId, numero])
   @@index([dossierId, statut])
 }

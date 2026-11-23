@@ -86,3 +86,16 @@ export async function creerAvoir(_etat: EtatAction, donnees: FormData): Promise<
   if (resultat.erreur || !resultat.id) return { erreur: resultat.erreur ?? "L'avoir n'a pas pu être créé." };
   redirect(`/envoyer/factures/${encodeURIComponent(resultat.id)}?avoir=1`);
 }
+
+
+export async function activerPartage(donnees: FormData): Promise<void> {
+  const id = String(donnees.get("id") ?? "");
+  await appeler("POST", `/facturation/factures/${encodeURIComponent(id)}/partage`);
+  redirect(`/envoyer/factures/${encodeURIComponent(id)}/document`);
+}
+
+export async function desactiverPartage(donnees: FormData): Promise<void> {
+  const id = String(donnees.get("id") ?? "");
+  await appeler("POST", `/facturation/factures/${encodeURIComponent(id)}/partage/desactiver`);
+  redirect(`/envoyer/factures/${encodeURIComponent(id)}/document`);
+}

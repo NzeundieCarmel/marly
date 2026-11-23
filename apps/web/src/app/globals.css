@@ -179,3 +179,16 @@ body {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+
+
+/* Impression d'une facture : une page A4, sans marges ajoutées par le navigateur */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+  }
+}

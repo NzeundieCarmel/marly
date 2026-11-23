@@ -355,7 +355,10 @@ export interface FactureDetail extends FactureResume {
   lignes: { designation: string; detail: string | null; quantite: number; prixUnitaire: number; totalHt: number }[];
   factureOrigine: { id: string; numero: string | null } | null;
   avoir: { id: string; numero: string | null } | null;
+  jetonPartage: string | null;
+  emetteur: EmetteurFige | null;
 }
+
 
 export function listerFactures(): Promise<FactureResume[]> {
   return appelerApi<FactureResume[]>("/facturation/factures");
@@ -363,4 +366,53 @@ export function listerFactures(): Promise<FactureResume[]> {
 
 export function lireFacture(id: string): Promise<FactureDetail> {
   return appelerApi<FactureDetail>(`/facturation/factures/${encodeURIComponent(id)}`);
+}
+
+
+export interface EmetteurFige {
+  raisonSociale: string;
+  niu: string | null;
+  rccm: string | null;
+  regime: Regime;
+  formeJuridique: string | null;
+  adresse: string | null;
+  telephone: string | null;
+  email: string | null;
+  centreImpots: string | null;
+  banque: string | null;
+  compte: string | null;
+  conditionsPaiement: string | null;
+  penalitesRetard: string | null;
+}
+
+export interface FactureDocument {
+  type: TypeFacture;
+  statut: StatutFacture;
+  numero: string | null;
+  dateEmission: string | null;
+  dateEcheance: string | null;
+  regime: Regime;
+  tauxTva: number;
+  tauxRetenue: number;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+  retenue: number;
+  netAPayer: number;
+  client: FactureDetail["clientDetail"];
+  emetteur: EmetteurFige | null;
+  lignes: FactureDetail["lignes"];
+  factureOrigine: { numero: string | null } | null;
+  avoir: { numero: string | null } | null;
+}
+
+// Lecture sans session, pour le lien public envoyé au client
+export async function lireFacturePublique(jeton: string): Promise<FactureDocument | null> {
+  try {
+    const reponse = await fetch(`${API_URL}/public/factures/${encodeURIComponent(jeton)}`, { cache: "no-store" });
+    if (!reponse.ok) return null;
+    return (await reponse.json()) as FactureDocument;
+  } catch {
+    return null;
+  }
 }

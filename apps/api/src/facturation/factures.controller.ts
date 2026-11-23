@@ -78,4 +78,22 @@ export class FacturesController {
   ): Promise<FactureDetail> {
     return this.service.creerAvoir(utilisateur, id);
   }
+
+  @Post(':id/partage')
+  @HttpCode(HttpStatus.OK)
+  partager(
+    @Param('id') id: string,
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+  ): Promise<{ jeton: string }> {
+    return this.service.partager(utilisateur, id);
+  }
+
+  @Post(':id/partage/desactiver')
+  @HttpCode(HttpStatus.OK)
+  desactiverPartage(
+    @Param('id') id: string,
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+  ): Promise<{ id: string }> {
+    return this.service.desactiverPartage(utilisateur, id);
+  }
 }
