@@ -1,13 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { lireProfil, lireProfilEmetteur, listerClientsFacture } from "@/lib/api";
+import { lireProfil, lireProfilEmetteur, listerClientsFacture, listerFactures, type FactureResume } from "@/lib/api";
+import { formatJour } from "@/lib/calcul-facture";
 import { CadreTelephone } from "@/components/cadre-telephone";
+import { Pastille, type Ton } from "@/components/pastille";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
+const NOMBRE = new Intl.NumberFormat("fr-FR");
 const CARTE = "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4";
 const BOUTON = "flex h-11 items-center justify-center rounded-xl px-4 text-[15px] font-bold";
+
+function statut(f: FactureResume): { ton: Ton; texte: string } {
+  if (f.type === "AVOIR") return { ton: "neutral", texte: "Avoir" };
+  if (f.statut === "BROUILLON") return { ton: "neutral", texte: "Brouillon" };
+  if (f.statut === "ANNULEE") return { ton: "neutral", texte: "Annulée" };
+  return { ton: "info", texte: "Émise" };
+}
 
 function Ligne({ terme, valeur }: { terme: string; valeur: string | null }) {
   return (
@@ -19,10 +29,11 @@ function Ligne({ terme, valeur }: { terme: string; valeur: string | null }) {
 }
 
 async function ContenuFactures({ recherche }: { recherche: Recherche }) {
-  const [profil, emetteur, clients, parametres] = await Promise.all([
+  const [profil, emetteur, clients, factures, parametres] = await Promise.all([
     lireProfil(),
     lireProfilEmetteur(),
     listerClientsFacture(),
+    listerFactures(),
     recherche,
   ]);
   if (!profil.dossier) {
@@ -38,6 +49,9 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
           Fiche enregistrée. Elle figurera en tête de chacune de vos factures.
         </p>
       )}
+      {parametres.supprimee === "1" && (
+        <p role="status" className="rounded-xl bg-neutral-bg p-3 text-sm text-neutral-ink">Brouillon supprimé.</p>
+      )}
 
       {emetteur.manquants.length > 0 && (
         <section aria-labelledby="titre-incomplet" className="flex flex-col gap-3 rounded-2xl border border-warning-line bg-warning-bg p-4 text-warning-ink">
@@ -49,6 +63,34 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
             Compléter ma fiche
           </Link>
         </section>
+      )}
+
+      <Link href="/envoyer/factures/nouvelle" className="flex h-[52px] items-center justify-center rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover">
+        Nouvelle facture
+      </Link>
+
+      {factures.length > 0 && (
+        <ul aria-label="Vos factures" className="overflow-hidden rounded-2xl border border-line bg-surface">
+          {factures.map((f, i) => {
+            const s = statut(f);
+            return (
+              <li key={f.id} className={i > 0 ? "border-t border-line" : ""}>
+                <Link href={`/envoyer/factures/${f.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-survol">
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[15px] font-medium">
+                      {f.numero ? `${f.numero} · ` : ""}{f.client}
+                    </span>
+                    <span className="text-[13px] text-muted tabular-nums">
+                      {f.dateEmission ? formatJour(f.dateEmission) : `Créé le ${formatJour(f.creeLe)}`} ·{" "}
+                      {f.type === "AVOIR" ? "− " : ""}{NOMBRE.format(f.totalTtc)} FCFA
+                    </span>
+                  </span>
+                  <Pastille ton={s.ton}>{s.texte}</Pastille>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <section aria-labelledby="titre-fiche" className={CARTE}>
@@ -76,7 +118,7 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
           <Link href="/envoyer/factures/clients" className={`${BOUTON} border border-line-strong bg-surface text-ink hover:bg-survol`}>
             Voir mes clients
           </Link>
-          <Link href="/envoyer/factures/clients/nouveau" className={`${BOUTON} bg-action text-white hover:bg-action-hover`}>
+          <Link href="/envoyer/factures/clients/nouveau" className={`${BOUTON} border border-line-strong bg-surface text-ink hover:bg-survol`}>
             Ajouter un client
           </Link>
         </div>

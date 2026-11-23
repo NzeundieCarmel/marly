@@ -46,6 +46,17 @@ enum StatutRattachement {
   ANNULEE
 }
 
+enum TypeFacture {
+  FACTURE
+  AVOIR
+}
+
+enum StatutFacture {
+  BROUILLON
+  EMISE
+  ANNULEE
+}
+
 model Cabinet {
   id            String                @id @default(cuid())
   nom           String
@@ -96,6 +107,8 @@ model Dossier {
   rattachements     DemandeRattachement[]
   profilFacturation ProfilFacturation?
   clientsFacture    ClientFacture[]
+  factures          Facture[]
+  compteursFacture  CompteurFacture[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -231,16 +244,77 @@ model ProfilFacturation {
 }
 
 model ClientFacture {
-  id        String   @id @default(cuid())
-  dossier   Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
-  dossierId String
-  nom       String
-  adresse   String?
-  niu       String?
-  telephone String?
-  email     String?
-  archive   Boolean  @default(false)
-  creeLe    DateTime @default(now())
+  id               String            @id @default(cuid())
+  dossier          Dossier           @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId        String
+  nom              String
+  adresse          String?
+  niu              String?
+  telephone        String?
+  email            String?
+  archive          Boolean           @default(false)
+  creeLe           DateTime          @default(now())
+  factures         Facture[]
+  compteursFacture CompteurFacture[]
 
   @@index([dossierId, archive])
+}
+
+model Facture {
+  id               String         @id @default(cuid())
+  dossier          Dossier        @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId        String
+  type             TypeFacture    @default(FACTURE)
+  statut           StatutFacture  @default(BROUILLON)
+  numero           String?
+  client           ClientFacture  @relation(fields: [clientId], references: [id], onDelete: NoAction)
+  clientId         String
+  dateEmission     DateTime?
+  dateEcheance     DateTime?
+  regime           Regime
+  tauxTva          Decimal        @db.Decimal(5, 2)
+  tauxRetenue      Decimal        @default(0) @db.Decimal(5, 2)
+  totalHt          Int            @default(0)
+  totalTva         Int            @default(0)
+  totalTtc         Int            @default(0)
+  retenue          Int            @default(0)
+  netAPayer        Int            @default(0)
+  emetteur         Json?
+  clientFige       Json?
+  factureOrigine   Facture?       @relation("Avoirs", fields: [factureOrigineId], references: [id])
+  factureOrigineId String?        @unique
+  avoir            Facture?       @relation("Avoirs")
+  lignes           LigneFacture[]
+  creeParId        String
+  creeLe           DateTime       @default(now())
+  emiseLe          DateTime?
+
+  @@unique([dossierId, numero])
+  @@index([dossierId, statut])
+}
+
+model LigneFacture {
+  id           String  @id @default(cuid())
+  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  factureId    String
+  ordre        Int
+  designation  String
+  detail       String?
+  quantite     Decimal @db.Decimal(12, 3)
+  prixUnitaire Int
+  totalHt      Int
+
+  @@index([factureId])
+}
+
+model CompteurFacture {
+  dossier         Dossier        @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId       String
+  annee           Int
+  type            TypeFacture
+  dernier         Int
+  clientFacture   ClientFacture? @relation(fields: [clientFactureId], references: [id])
+  clientFactureId String?
+
+  @@id([dossierId, annee, type])
 }

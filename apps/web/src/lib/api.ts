@@ -325,3 +325,42 @@ export function listerClientsFacture(q?: string): Promise<ClientFacture[]> {
 export function lireClientFacture(id: string): Promise<ClientFacture> {
   return appelerApi<ClientFacture>(`/facturation/clients/${encodeURIComponent(id)}`);
 }
+
+
+export type TypeFacture = "FACTURE" | "AVOIR";
+export type StatutFacture = "BROUILLON" | "EMISE" | "ANNULEE";
+
+export interface FactureResume {
+  id: string;
+  type: TypeFacture;
+  statut: StatutFacture;
+  numero: string | null;
+  client: string;
+  dateEmission: string | null;
+  totalTtc: number;
+  netAPayer: number;
+  creeLe: string;
+}
+
+export interface FactureDetail extends FactureResume {
+  clientId: string;
+  clientDetail: { nom: string; adresse: string | null; niu: string | null; telephone: string | null; email: string | null };
+  dateEcheance: string | null;
+  regime: Regime;
+  tauxTva: number;
+  tauxRetenue: number;
+  totalHt: number;
+  totalTva: number;
+  retenue: number;
+  lignes: { designation: string; detail: string | null; quantite: number; prixUnitaire: number; totalHt: number }[];
+  factureOrigine: { id: string; numero: string | null } | null;
+  avoir: { id: string; numero: string | null } | null;
+}
+
+export function listerFactures(): Promise<FactureResume[]> {
+  return appelerApi<FactureResume[]>("/facturation/factures");
+}
+
+export function lireFacture(id: string): Promise<FactureDetail> {
+  return appelerApi<FactureDetail>(`/facturation/factures/${encodeURIComponent(id)}`);
+}
