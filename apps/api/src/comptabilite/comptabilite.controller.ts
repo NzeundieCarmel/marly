@@ -16,6 +16,7 @@ import { Roles } from '../auth/roles.decorator';
 import { UtilisateurCourant } from '../auth/utilisateur-courant.decorator';
 import { ComptabiliteService } from './comptabilite.service';
 import type { DetailPiece } from './comptabilite.service';
+import type { FactureDocument } from '../facturation/factures.service';
 import { ValiderPieceDto } from './dto/valider-piece.dto';
 
 @Controller('pieces')
@@ -44,6 +45,15 @@ export class ComptabiliteController {
       'X-Content-Type-Options': 'nosniff',
     });
     return new StreamableFile(createReadStream(chemin));
+  }
+
+  @Roles('RESPONSABLE', 'COMPTABLE')
+  @Get(':id/facture')
+  facture(
+    @Param('id') id: string,
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+  ): Promise<FactureDocument> {
+    return this.compta.facture(id, utilisateur);
   }
 
   @Roles('RESPONSABLE', 'COMPTABLE')

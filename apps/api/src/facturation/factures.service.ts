@@ -81,6 +81,8 @@ export interface FactureDocument {
 }
 
 const MAXIMUM = 2_000_000_000;
+const CATEGORIE_VENTE = 'Ventes';
+const CATEGORIE_AVOIR = 'Avoir sur ventes';
 
 const INCLURE = {
   client: {
@@ -444,6 +446,19 @@ export class FacturesService {
       });
       if (maj.count !== 1)
         throw new ConflictException('Cette facture est déjà émise');
+
+      // La facture devient une pièce de vente du dossier, dans la même transaction que son numéro
+      await tx.piece.create({
+        data: {
+          dossierId,
+          date: jourEnDate(jour),
+          montantTtc: calcul.totalTtc,
+          fournisseur: f.client.nom,
+          categorie: CATEGORIE_VENTE,
+          statut: 'RECUE',
+          factureId: id,
+        },
+      });
     });
     return this.lire(utilisateur, id);
   }
@@ -516,6 +531,18 @@ export class FacturesService {
         },
         select: { id: true },
       });
+      await tx.piece.create({
+        data: {
+          dossierId,
+          date: jourEnDate(jour),
+          montantTtc: f.totalTtc,
+          fournisseur:
+            (f.clientFige as { nom?: string } | null)?.nom ?? 'Client',
+          categorie: CATEGORIE_AVOIR,
+          statut: 'RECUE',
+          factureId: avoir.id,
+        },
+      });
       return avoir.id;
     });
     return this.lire(utilisateur, avoirId);
@@ -553,16 +580,7 @@ export class FacturesService {
     return { id };
   }
 
-  async lirePublic(jeton: string): Promise<FactureDocument> {
-    // Un jeton mal formé ne déclenche même pas de requête
-    if (!/^[A-Za-z0-9_-]{43}$/.test(jeton))
-      throw new NotFoundException('Facture introuvable');
-    const f = await this.prisma.facture.findUnique({
-      where: { jetonPartage: jeton },
-      include: INCLURE,
-    });
-    if (!f || f.statut === 'BROUILLON')
-      throw new NotFoundException('Facture introuvable');
+  private versDocument(f: FactureComplete): FactureDocument {
     const d = versDetail(f);
     return {
       type: d.type,
@@ -586,5 +604,28 @@ export class FacturesService {
         : null,
       avoir: d.avoir ? { numero: d.avoir.numero } : null,
     };
+  }
+
+  async lirePublic(jeton: string): Promise<FactureDocument> {
+    // Un jeton mal formé ne déclenche même pas de requête
+    if (!/^[A-Za-z0-9_-]{43}$/.test(jeton))
+      throw new NotFoundException('Facture introuvable');
+    const f = await this.prisma.facture.findUnique({
+      where: { jetonPartage: jeton },
+      include: INCLURE,
+    });
+    if (!f || f.statut === 'BROUILLON')
+      throw new NotFoundException('Facture introuvable');
+    return this.versDocument(f);
+  }
+
+  // Pour le cabinet : l'accès est vérifié en amont, à travers la pièce de vente
+  async documentParId(factureId: string): Promise<FactureDocument> {
+    const f = await this.prisma.facture.findUnique({
+      where: { id: factureId },
+      include: INCLURE,
+    });
+    if (!f) throw new NotFoundException('Facture introuvable');
+    return this.versDocument(f);
   }
 }

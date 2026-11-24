@@ -133,6 +133,8 @@ model Piece {
   demandeSatisfaite  DemandePiece?   @relation("PieceReponse")
   lotExport          LotExport?      @relation(fields: [lotExportId], references: [id], onDelete: SetNull)
   lotExportId        String?
+  facture            Facture?        @relation(fields: [factureId], references: [id], onDelete: SetNull)
+  factureId          String?         @unique
   creeLe             DateTime        @default(now())
 
   @@index([dossierId, date])
@@ -289,7 +291,8 @@ model Facture {
   creeLe           DateTime       @default(now())
   emiseLe          DateTime?
   jetonPartage     String?        @unique
-  
+  piece            Piece?
+
   @@unique([dossierId, numero])
   @@index([dossierId, statut])
 }

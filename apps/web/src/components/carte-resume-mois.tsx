@@ -52,6 +52,13 @@ export function CarteResumeMois({ resume }: { resume: ResumeMois }) {
         </>
       )}
 
+      {resume.ventes !== 0 && (
+        <p className="border-t border-line pt-2.5 text-[13px] text-muted">
+          Facturé avec Marly ce mois-ci :{" "}
+          <span className="font-bold text-ink tabular-nums">{formatMontant(resume.ventes)} FCFA</span>
+        </p>
+      )}
+
       {resume.totalPrecedent > 0 && (
         <p className="border-t border-line pt-2.5 text-[13px] text-muted">
           Le mois dernier : <span className="tabular-nums">{formatMontant(resume.totalPrecedent)} FCFA</span>

@@ -51,6 +51,7 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
       {drapeaux.emise === "1" && (
         <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">
           Facture émise sous le numéro <strong>{facture.numero}</strong>.
+          {emetteur.autonome ? " Elle est rangée dans vos pièces." : " Elle a été transmise à votre cabinet comptable."}
         </p>
       )}
       {drapeaux.avoir === "1" && (

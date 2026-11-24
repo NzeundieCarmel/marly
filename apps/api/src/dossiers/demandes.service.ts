@@ -98,7 +98,11 @@ export class DemandesService {
         'Seule une piece recue peut etre renvoyee a l entreprise',
       );
     }
-
+    if (piece.factureId) {
+      throw new ConflictException(
+        'Une facture émise avec Marly ne se reprend pas en photo',
+      );
+    }
     const description =
       `${dto.motif.trim()} : ${piece.fournisseur ?? piece.categorie} du ${formatJour(piece.date)}`.slice(
         0,

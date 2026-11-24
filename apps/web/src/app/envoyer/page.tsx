@@ -51,7 +51,7 @@ async function ContenuEnvoi() {
 
   const etats = profil.autonome ? ETAT_AUTONOME : ETAT_CABINET;
   const recentes = pieces
-    .filter((p) => p.statut !== "REMPLACEE")
+    .filter((p) => p.statut !== "REMPLACEE" && !p.factureId)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const derniere = recentes[0];
   const dernier: DernierEnvoi | null = derniere

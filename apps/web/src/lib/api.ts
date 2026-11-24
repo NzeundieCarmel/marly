@@ -34,6 +34,7 @@ export interface Piece {
   categorie: string;
   statut: StatutPiece;
   fichier: string | null;
+  factureId: string | null;
 }
 
 export interface Demande {
@@ -67,6 +68,7 @@ export interface DetailPiece {
     journal: string | null;
     valideLe: string | null;
     aUnFichier: boolean;
+    factureId: string | null;
   };
   dossier: { id: string; raisonSociale: string; regime: Regime; tauxTva: number };
   ecriture: { journal: string; proposee: boolean; lignes: LigneEcriture[] };
@@ -415,4 +417,10 @@ export async function lireFacturePublique(jeton: string): Promise<FactureDocumen
   } catch {
     return null;
   }
+}
+ 
+
+// Le document d'une vente émise avec Marly, pour le cabinet qui valide la pièce
+export function lireFactureDePiece(pieceId: string): Promise<FactureDocument> {
+  return appelerApi<FactureDocument>(`/pieces/${encodeURIComponent(pieceId)}/facture`);
 }

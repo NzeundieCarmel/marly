@@ -12,5 +12,6 @@ import { FacturesService } from './factures.service';
     FacturesPubliquesController,
   ],
   providers: [FacturationService, FacturesService],
+  exports: [FacturesService],
 })
 export class FacturationModule {}

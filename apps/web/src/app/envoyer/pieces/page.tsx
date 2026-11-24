@@ -32,8 +32,11 @@ function libelleMois(cle: string): string {
   return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
 
+// Total des dépenses : les ventes émises avec Marly n'y entrent pas
 function totalDe(pieces: Piece[]): number {
-  return pieces.filter((p) => p.statut !== "REMPLACEE").reduce((somme, p) => somme + p.montantTtc, 0);
+  return pieces
+    .filter((p) => p.statut !== "REMPLACEE" && !p.factureId)
+    .reduce((somme, p) => somme + p.montantTtc, 0);
 }
 
 function Chiffre({ valeur, libelle, ton }: { valeur: number; libelle: string; ton: string }) {
@@ -46,6 +49,9 @@ function Chiffre({ valeur, libelle, ton }: { valeur: number; libelle: string; to
 }
 
 async function ContenuPieces({ recherche }: { recherche: Recherche }) {
+  // Page calculée à chaque visite : à placer avant toute lecture de la date
+  await connection();
+
   const profil = await lireProfil();
   if (!profil.dossier) {
     redirect("/dossiers");
@@ -55,7 +61,6 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
   const pieces = (await listerPieces(profil.dossier.id)).sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
-  await connection();
   const ceMois = resumerMois(pieces, new Date());
 
   // Critères de recherche lus dans l'adresse
@@ -104,7 +109,7 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
       {autonome ? (
         <div className="grid grid-cols-2 gap-2">
           <Chiffre valeur={envoyees} libelle="pièces rangées" ton="text-heading" />
-          <Chiffre valeur={ceMois.nombre} libelle={`en ${ceMois.libelle}`} ton="text-heading" />
+          <Chiffre valeur={ceMois.nombre} libelle={`dépenses en ${ceMois.libelle}`} ton="text-heading" />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
@@ -123,7 +128,7 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
           <strong className="text-ink">
             {nbTrouvees} pièce{nbTrouvees > 1 ? "s" : ""}
           </strong>{" "}
-          · <span className="tabular-nums">{formatMontant(totalDe(trouvees))} FCFA</span>
+          · <span className="tabular-nums">{formatMontant(totalDe(trouvees))} FCFA de dépenses</span>
         </p>
       )}
 
@@ -138,7 +143,7 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
       ) : (
         groupes.map((g) => (
           <section key={g.cle} aria-label={libelleMois(g.cle)} className="overflow-hidden rounded-2xl border border-line bg-surface">
-            <div className="flex items-center justify-between gap-2 bg-sunken px-3.5 py-2.5 text-[13px] font-medium text-muted">
+                        <div className="flex items-center justify-between gap-2 bg-sunken px-3.5 py-2.5 text-[13px] font-medium text-muted">
               <span>{libelleMois(g.cle)}</span>
               <span className="tabular-nums">{formatMontant(totalDe(g.pieces))} FCFA</span>
             </div>
@@ -147,7 +152,11 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
               return (
                 <Link
                   key={p.id}
-                  href={`/envoyer/pieces/${encodeURIComponent(p.id)}`}
+                  href={
+                    p.factureId
+                      ? `/envoyer/factures/${encodeURIComponent(p.factureId)}`
+                      : `/envoyer/pieces/${encodeURIComponent(p.id)}`
+                  }
                   className="flex items-center gap-3 border-t border-line px-3.5 py-3 hover:bg-survol"
                 >
                   <span className="flex min-w-0 flex-grow flex-col gap-0.5">
@@ -155,7 +164,7 @@ async function ContenuPieces({ recherche }: { recherche: Recherche }) {
                     <span className={`text-[13px] tabular-nums ${p.statut === "A_COMPLETER" ? "text-warning-ink" : "text-muted"}`}>
                       {p.statut === "A_COMPLETER"
                         ? "À reprendre : voir l'accueil"
-                        : `${new Date(p.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "UTC" })} · ${formatMontant(p.montantTtc)} FCFA`}
+                        : `${new Date(p.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "UTC" })} · ${p.factureId ? `${p.categorie} · ` : ""}${formatMontant(p.montantTtc)} FCFA`}
                     </span>
                   </span>
                   <Pastille ton={statut.ton}>{statut.texte}</Pastille>

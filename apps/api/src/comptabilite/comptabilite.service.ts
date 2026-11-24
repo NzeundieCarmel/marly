@@ -9,6 +9,8 @@ import { access } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import type { ChargeJeton } from '../auth/auth.service';
 import { DossiersService } from '../dossiers/dossiers.service';
+import { FacturesService } from '../facturation/factures.service';
+import type { FactureDocument } from '../facturation/factures.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValiderPieceDto } from './dto/valider-piece.dto';
 import { proposerEcriture } from './plan-comptable';
@@ -25,6 +27,7 @@ export interface DetailPiece {
     journal: string | null;
     valideLe: Date | null;
     aUnFichier: boolean;
+    factureId: string | null;
   };
   dossier: {
     id: string;
@@ -50,6 +53,7 @@ export class ComptabiliteService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dossiers: DossiersService,
+    private readonly factures: FacturesService,
   ) {}
 
   // Charge une pièce en vérifiant que l'utilisateur a accès à son dossier
@@ -96,7 +100,9 @@ export class ComptabiliteService {
               credit: l.credit,
             })),
           }
-        : { ...proposerEcriture(piece, dossier), proposee: true };
+        : piece.factureId
+          ? { ...(await this.ecritureVente(piece.factureId)), proposee: true }
+          : { ...proposerEcriture(piece, dossier), proposee: true };
 
     return {
       piece: {
@@ -109,6 +115,7 @@ export class ComptabiliteService {
         journal: piece.journal,
         valideLe: piece.valideLe,
         aUnFichier: piece.fichier !== null,
+        factureId: piece.factureId,
       },
       dossier,
       ecriture,
@@ -195,5 +202,63 @@ export class ComptabiliteService {
         TYPES_FICHIER[extname(chemin).toLowerCase()] ??
         'application/octet-stream',
     };
+  }
+
+  // Vente émise avec Marly : client au débit, vente et TVA collectée au crédit ; sens inverse pour un avoir
+  private async ecritureVente(
+    factureId: string,
+  ): Promise<{ journal: string; lignes: LigneEcritureProposee[] }> {
+    const f = await this.prisma.facture.findUnique({
+      where: { id: factureId },
+      select: {
+        type: true,
+        numero: true,
+        totalHt: true,
+        totalTva: true,
+        totalTtc: true,
+        clientFige: true,
+        client: { select: { nom: true } },
+      },
+    });
+    if (!f) throw new NotFoundException('Facture introuvable');
+
+    const client =
+      (f.clientFige as { nom?: string } | null)?.nom ?? f.client.nom;
+    const avoir = f.type === 'AVOIR';
+    const libelle = `${avoir ? 'Avoir' : 'Facture'} ${f.numero ?? ''} ${client}`
+      .trim()
+      .slice(0, 120);
+    const sens = (montant: number, auDebit: boolean) =>
+      auDebit !== avoir
+        ? { debit: montant, credit: 0 }
+        : { debit: 0, credit: montant };
+
+    const lignes: LigneEcritureProposee[] = [
+      { compte: '411', libelle, tiers: client, ...sens(f.totalTtc, true) },
+      { compte: '701', libelle, tiers: null, ...sens(f.totalHt, false) },
+    ];
+    if (f.totalTva > 0) {
+      lignes.push({
+        compte: '4431',
+        libelle,
+        tiers: null,
+        ...sens(f.totalTva, false),
+      });
+    }
+    return { journal: 'VE', lignes };
+  }
+
+  // Le document de la facture, pour le cabinet qui valide la pièce de vente
+  async facture(
+    pieceId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<FactureDocument> {
+    const piece = await this.chargerPiece(pieceId, utilisateur);
+    if (!piece.factureId) {
+      throw new NotFoundException(
+        "Cette pièce ne vient pas d'une facture Marly",
+      );
+    }
+    return this.factures.documentParId(piece.factureId);
   }
 }

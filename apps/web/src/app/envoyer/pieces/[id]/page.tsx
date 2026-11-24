@@ -27,8 +27,12 @@ async function ContenuFiche({ parametres }: { parametres: Promise<{ id: string }
 
   // Seules les pièces de son propre dossier sont cherchées : une autre pièce donne 404
   const piece = (await listerPieces(profil.dossier.id)).find((p) => p.id === id);
-  if (!piece) {
+    if (!piece) {
     notFound();
+  }
+  // Une pièce de vente se consulte sur sa facture
+  if (piece.factureId) {
+    redirect(`/envoyer/factures/${encodeURIComponent(piece.factureId)}`);
   }
 
   const statut = statutsPiece(profil.autonome)[piece.statut];

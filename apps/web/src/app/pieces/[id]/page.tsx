@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { lirePiece, listerPieces, type StatutPiece } from "@/lib/api";
+import { lireFactureDePiece, lirePiece, listerPieces, type StatutPiece } from "@/lib/api";
 import { formatMontant } from "@/lib/format";
 import { CadreCabinet } from "@/components/cadre-cabinet";
 import { Pastille, type Ton } from "@/components/pastille";
 import { EditeurEcriture } from "./editeur-ecriture";
 import { RenvoyerPiece } from "./renvoyer-piece";
+import { ApercuFacture } from "./apercu-facture";
 import { Visionneuse } from "./visionneuse";
 
 const STATUTS: Record<StatutPiece, { ton: Ton; texte: string }> = {
@@ -21,8 +22,13 @@ const FLECHE =
 
 async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { piece, dossier, ecriture } = await lirePiece(id);
-  const pieces = await listerPieces(dossier.id);
+    const { piece, dossier, ecriture } = await lirePiece(id);
+  // Une vente émise avec Marly montre sa facture à la place d'une photo
+  const [pieces, documentFacture] = await Promise.all([
+    listerPieces(dossier.id),
+    piece.factureId ? lireFactureDePiece(piece.id) : Promise.resolve(null),
+  ]);
+  const vente = documentFacture !== null;
 
   // Navigation parmi les pièces à valider du dossier
   const aValider = pieces.filter((p) => p.statut === "RECUE");
@@ -81,21 +87,27 @@ async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
       </header>
 
       <div className="flex flex-wrap items-start gap-6">
-        <Visionneuse
-          src={piece.aUnFichier ? `/api/pieces/${piece.id}/fichier` : null}
-          nom={titre}
-        />
+             {documentFacture ? (
+          <ApercuFacture pieceId={piece.id} document={documentFacture} />
+        ) : (
+          <Visionneuse
+            src={piece.aUnFichier ? `/api/pieces/${piece.id}/fichier` : null}
+            nom={titre}
+          />
+        )}
 
         <div className="flex min-w-0 flex-[999_1_440px] flex-col gap-4">
           <section aria-labelledby="titre-saisie" className="flex flex-col gap-3.5 rounded-2xl border border-line bg-surface px-5 py-4">
-            <h2 id="titre-saisie" className="text-base font-bold">Saisi par l&apos;entreprise</h2>
+            <h2 id="titre-saisie" className="text-base font-bold">
+              {vente ? "Facture émise avec Marly" : "Saisi par l'entreprise"}
+            </h2>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="flex flex-col gap-0.5">
                 <dt className="text-[13px] text-muted">Date</dt>
                 <dd className="tabular-nums">{new Date(piece.date).toLocaleDateString("fr-FR", { timeZone: "UTC" })}</dd>
               </div>
               <div className="flex flex-col gap-0.5">
-                <dt className="text-[13px] text-muted">Fournisseur</dt>
+                <dt className="text-[13px] text-muted">{vente ? "Client" : "Fournisseur"}</dt>
                 <dd>{piece.fournisseur ?? "Non précisé"}</dd>
               </div>
               <div className="flex flex-col gap-0.5">
@@ -131,7 +143,9 @@ async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
             proposee={ecriture.proposee}
             modifiable={modifiable}
             actionsSecondaires={
-              <RenvoyerPiece pieceId={piece.id} dossierId={dossier.id} suivanteId={suivanteId} />
+              vente ? undefined : (
+                <RenvoyerPiece pieceId={piece.id} dossierId={dossier.id} suivanteId={suivanteId} />
+              )
             }
           />
 

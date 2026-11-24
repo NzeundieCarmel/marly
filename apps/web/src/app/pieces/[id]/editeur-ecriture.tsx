@@ -122,7 +122,7 @@ export function EditeurEcriture({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
             <h2 id="titre-ecriture" className="text-base font-bold">
               Écriture {modifiable ? (proposee ? "proposée" : "à compléter") : "validée"} · journal{" "}
-              {journal === "AC" ? "des achats (AC)" : journal}
+                {journal === "AC" ? "des achats (AC)" : journal === "VE" ? "des ventes (VE)" : journal}
             </h2>
             <span className="text-[13px] text-muted">Plan comptable SYSCOHADA</span>
           </div>
