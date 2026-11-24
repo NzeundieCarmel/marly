@@ -21,6 +21,12 @@ export default function PageConnexion() {
         </Link>
       </p>
 
+      <p className="text-center text-sm">
+        <Link href="/mot-de-passe-oublie" className="font-bold text-link underline">
+          Mot de passe oublié ?
+        </Link>
+      </p>
+      
       <p className="mt-auto text-center text-[13px] leading-[19px] text-muted">
         Vous êtes une entreprise ? Votre cabinet vous envoie un lien d&apos;invitation. Pas de
         comptable ?{" "}

@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
 import { COOKIE_SESSION } from "@/lib/session";
+import { entetesRelais } from "@/lib/entetes-relais";
 
 export interface EtatInscriptionEntreprise {
   erreur: string | null;
@@ -31,7 +32,7 @@ export async function sInscrireEntreprise(
   try {
     reponse = await fetch(`${API_URL}/inscription/entreprise`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(ip ? { "X-Marly-Ip": ip } : {}) },
+      headers: { "Content-Type": "application/json", ...entetesRelais(ip) },
       body: JSON.stringify({ ...valeurs, motDePasse, siteWeb: String(donnees.get("siteWeb") ?? "") }),
       cache: "no-store",
     });

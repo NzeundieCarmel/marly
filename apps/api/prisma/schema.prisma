@@ -72,23 +72,24 @@ model Cabinet {
 }
 
 model Utilisateur {
-  id                   String                @id @default(cuid())
-  nom                  String
-  email                String?               @unique
-  telephone            String?               @unique
-  motDePasseHache      String
-  role                 Role
-  cabinet              Cabinet               @relation(fields: [cabinetId], references: [id])
-  cabinetId            String
-  dossier              Dossier?              @relation(fields: [dossierId], references: [id])
-  dossierId            String?
-  piecesValidees       Piece[]               @relation("PiecesValidees")
-  demandesCreees       DemandePiece[]
-  lotsExport           LotExport[]
-  invitationsCreees    Invitation[]
-  rattachementsCrees   DemandeRattachement[] @relation("RattachementsCrees")
-  rattachementsTraites DemandeRattachement[] @relation("RattachementsTraites")
-  creeLe               DateTime              @default(now())
+  id                    String                 @id @default(cuid())
+  nom                   String
+  email                 String?                @unique
+  telephone             String?                @unique
+  motDePasseHache       String
+  role                  Role
+  cabinet               Cabinet                @relation(fields: [cabinetId], references: [id])
+  cabinetId             String
+  dossier               Dossier?               @relation(fields: [dossierId], references: [id])
+  dossierId             String?
+  piecesValidees        Piece[]                @relation("PiecesValidees")
+  demandesCreees        DemandePiece[]
+  lotsExport            LotExport[]
+  invitationsCreees     Invitation[]
+  rattachementsCrees    DemandeRattachement[]  @relation("RattachementsCrees")
+  rattachementsTraites  DemandeRattachement[]  @relation("RattachementsTraites")
+  codesReinitialisation CodeReinitialisation[]
+  creeLe                DateTime               @default(now())
 }
 
 model Dossier {
@@ -321,4 +322,17 @@ model CompteurFacture {
   clientFactureId String?
 
   @@id([dossierId, annee, type])
+}
+
+model CodeReinitialisation {
+  id            String      @id @default(cuid())
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  utilisateurId String
+  codeHache     String
+  expireLe      DateTime
+  essais        Int         @default(0)
+  utiliseLe     DateTime?
+  creeLe        DateTime    @default(now())
+
+  @@index([utilisateurId, creeLe])
 }

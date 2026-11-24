@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_URL } from "@/lib/api";
 import { COOKIE_SESSION } from "@/lib/session";
+import { entetesRelais } from "@/lib/entetes-relais";
 
 export interface EtatInscription {
   erreur: string | null;
@@ -36,7 +37,7 @@ export async function sInscrire(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(ip ? { "X-Marly-Ip": ip } : {}),
+        ...entetesRelais(ip),
       },
       body: JSON.stringify({
         ...valeurs,

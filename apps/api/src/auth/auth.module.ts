@@ -8,6 +8,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { InscriptionController } from './inscription.controller';
 import { InscriptionService } from './inscription.service';
+import { MotDePasseController } from './mot-de-passe.controller';
+import { MotDePasseService } from './mot-de-passe.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
@@ -22,11 +24,17 @@ import { JwtAuthGuard } from './jwt-auth.guard';
       }),
     }),
   ],
-  controllers: [AuthController, InscriptionController, InvitationsController],
+  controllers: [
+    AuthController,
+    InscriptionController,
+    InvitationsController,
+    MotDePasseController,
+  ],
   providers: [
     AuthService,
     InscriptionService,
     InvitationsService,
+    MotDePasseService,
     // Toutes les routes exigent un jeton, sauf celles marquées @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

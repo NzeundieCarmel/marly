@@ -1,3 +1,4 @@
+import { MessagerieModule } from './messagerie/messagerie.module';
 import { FacturationModule } from './facturation/facturation.module';
 import { RattachementsModule } from './rattachements/rattachements.module';
 import { Module } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { TableauDeBordModule } from './tableau-de-bord/tableau-de-bord.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    MessagerieModule,
     SanteModule,
     AuthModule,
     DossiersModule,
