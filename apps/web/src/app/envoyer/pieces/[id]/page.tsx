@@ -73,6 +73,13 @@ async function ContenuFiche({ parametres }: { parametres: Promise<{ id: string }
         </Ligne>
       </dl>
 
+      <Link
+        href={`/envoyer/pieces/${encodeURIComponent(piece.id)}/fiche`}
+        className="flex h-12 items-center justify-center rounded-xl bg-action text-[15px] font-bold text-white hover:bg-action-hover"
+      >
+        Fiche de pièce à imprimer
+      </Link>
+
       {src && (
         <a
           href={`${src}?telecharger=1`}

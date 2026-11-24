@@ -35,6 +35,8 @@ export interface Piece {
   statut: StatutPiece;
   fichier: string | null;
   factureId: string | null;
+  empreinte: string | null;
+  creeLe: string;
 }
 
 export interface Demande {
@@ -69,8 +71,10 @@ export interface DetailPiece {
     valideLe: string | null;
     aUnFichier: boolean;
     factureId: string | null;
+    empreinte: string | null;
+    recueLe: string;
   };
-  dossier: { id: string; raisonSociale: string; regime: Regime; tauxTva: number };
+  dossier: { id: string; raisonSociale: string; regime: Regime; tauxTva: number; niu: string | null };
   ecriture: { journal: string; proposee: boolean; lignes: LigneEcriture[] };
 }
 

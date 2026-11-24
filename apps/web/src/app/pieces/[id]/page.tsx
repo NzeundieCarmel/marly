@@ -79,6 +79,11 @@ async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
       <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <h1 className="text-[28px] font-bold leading-[34px] text-heading">{titre}</h1>
         <Pastille ton={statut.ton}>{statut.texte}</Pastille>
+        {!vente && (
+          <Link href={`/pieces/${piece.id}/fiche`} className="text-sm font-bold text-link underline">
+            Fiche de pièce
+          </Link>
+        )}
         <span className="text-sm text-muted">
           {dossier.regime === "REEL"
             ? `Régime réel · TVA ${String(dossier.tauxTva).replace(".", ",")} %`

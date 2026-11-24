@@ -28,12 +28,15 @@ export interface DetailPiece {
     valideLe: Date | null;
     aUnFichier: boolean;
     factureId: string | null;
+    empreinte: string | null;
+    recueLe: Date;
   };
   dossier: {
     id: string;
     raisonSociale: string;
     regime: 'REEL' | 'IGS';
     tauxTva: number;
+    niu: string | null;
   };
   ecriture: {
     journal: string;
@@ -84,6 +87,7 @@ export class ComptabiliteService {
       raisonSociale: piece.dossier.raisonSociale,
       regime: piece.dossier.regime,
       tauxTva: piece.dossier.tauxTva.toNumber(),
+      niu: piece.dossier.niu,
     };
 
     // Pièce déjà validée : l'écriture enregistrée ; sinon : la proposition de Marly
@@ -116,6 +120,8 @@ export class ComptabiliteService {
         valideLe: piece.valideLe,
         aUnFichier: piece.fichier !== null,
         factureId: piece.factureId,
+        empreinte: piece.empreinte,
+        recueLe: piece.creeLe,
       },
       dossier,
       ecriture,
