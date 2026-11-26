@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { lireAcces, lireProfil } from "@/lib/api";
 import { CadreCabinet } from "@/components/cadre-cabinet";
@@ -11,6 +12,11 @@ async function ContenuEquipe() {
       <div className="flex flex-col gap-1">
         <span className="text-sm text-muted">{profil.cabinet}</span>
         <h1 className="text-[28px] font-bold leading-[34px] text-heading">Équipe du cabinet</h1>
+        {profil.role === "RESPONSABLE" && (
+          <Link href="/equipe/journal" className="self-start py-1 text-sm font-bold text-link underline">
+            Journal d&apos;activité
+          </Link>
+        )}
       </div>
       <div className="max-w-3xl">
         <GestionAcces

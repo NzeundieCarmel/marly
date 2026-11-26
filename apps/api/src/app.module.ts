@@ -12,6 +12,7 @@ import { DossiersModule } from './dossiers/dossiers.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SanteModule } from './sante/sante.module';
 import { TableauDeBordModule } from './tableau-de-bord/tableau-de-bord.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TableauDeBordModule } from './tableau-de-bord/tableau-de-bord.module';
     TableauDeBordModule,
     RattachementsModule,
     FacturationModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

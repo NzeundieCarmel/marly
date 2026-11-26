@@ -377,3 +377,20 @@ model ReglementFacture {
 
   @@index([factureId])
 }
+
+// Trace d'audit : volontairement sans lien avec les autres tables, pour survivre aux suppressions
+model JournalAudit {
+  id             String   @id @default(cuid())
+  cabinetId      String?
+  dossierId      String?
+  utilisateurId  String
+  nomUtilisateur String
+  role           Role
+  action         String
+  cible          String?
+  ip             String?
+  creeLe         DateTime @default(now())
+
+  @@index([cabinetId, creeLe])
+  @@index([dossierId, creeLe])
+}

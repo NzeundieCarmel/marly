@@ -468,3 +468,19 @@ export function lirePaiement(factureId: string): Promise<Paiement> {
 export function listerPaiements(): Promise<ResumePaiement[]> {
   return appelerApi<ResumePaiement[]>("/facturation/paiements");
 }
+export interface EntreeJournal {
+  id: string;
+  creeLe: string;
+  nomUtilisateur: string;
+  role: RoleMarly;
+  action: string;
+  cible: string | null;
+  ip: string | null;
+  dossierId: string | null;
+  dossier: string | null;
+}
+
+export function lireJournal(dossierId?: string): Promise<EntreeJournal[]> {
+  const filtre = dossierId ? `?dossierId=${encodeURIComponent(dossierId)}` : "";
+  return appelerApi<EntreeJournal[]>(`/journal${filtre}`);
+}

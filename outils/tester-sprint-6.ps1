@@ -80,6 +80,20 @@ Verifier "Isolation : paiement d'une autre entreprise" 404 (Appeler Get "/factur
 Verifier "Isolation : reglement sur une autre entreprise" 404 (Appeler Post "/facturation/factures/$f/reglements" $b @{ date = $aujourdhui; montant = 1000; mode = "ESPECES" })
 Verifier "Droits : cabinet refuse" 403 (Appeler Get "/facturation/paiements" $marc)
 
+# Journal d'activite
+Appeler Get "/auth/moi" $a | Out-Null
+$dossierA = $resultat.dossier.id
+Appeler Get "/dossiers" $marc | Out-Null
+$dossierMarc = @($resultat)[0].id
+Appeler Post "/dossiers/$dossierMarc/demandes" $marc @{ description = "Releve bancaire de novembre" } | Out-Null
+$demandeJournal = $resultat.id
+Appeler Post "/demandes/$demandeJournal/annuler" $marc | Out-Null
+Verifier "Journal : derniere action de Marc" "POST /demandes/:id/annuler/Marc T." $(Appeler Get "/journal?dossierId=$dossierMarc" $marc | Out-Null; "$(@($resultat)[0].action)/$(@($resultat)[0].nomUtilisateur)")
+Verifier "Journal : demande de piece tracee" "True" $(Appeler Get "/journal?dossierId=$dossierMarc" $marc | Out-Null; [bool](@(@($resultat) | Where-Object { $_.action -eq "POST /dossiers/:id/demandes" }).Count))
+Verifier "Journal : entreprise refusee" 403 (Appeler Get "/journal" $a)
+Verifier "Journal : entreprise hors cabinet invisible" 0 $(Appeler Get "/journal" $marc | Out-Null; @(@($resultat) | Where-Object { $_.dossierId -eq $dossierA }).Count)
+Verifier "Journal : dossier d'un autre cabinet refuse" 404 (Appeler Get "/journal?dossierId=$dossierA" $marc)
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -gt 0) {
