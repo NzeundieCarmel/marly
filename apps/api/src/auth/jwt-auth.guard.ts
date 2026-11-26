@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { PrismaService } from '../prisma/prisma.service';
 import type { ChargeJeton, RoleMarly } from './auth.service';
 import { CLE_ROUTE_PUBLIQUE } from './public.decorator';
 import { CLE_ROLES } from './roles.decorator';
@@ -21,6 +22,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
     private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(contexte: ExecutionContext): Promise<boolean> {
@@ -44,6 +46,14 @@ export class JwtAuthGuard implements CanActivate {
     try {
       utilisateur = await this.jwt.verifyAsync<ChargeJeton>(jeton);
     } catch {
+      throw new UnauthorizedException('Session expiree ou invalide');
+    }
+    // Session révoquée (mot de passe changé, « déconnecter partout ») : refusée aussitôt
+    const compte = await this.prisma.utilisateur.findUnique({
+      where: { id: utilisateur.sub },
+      select: { versionJeton: true },
+    });
+    if (!compte || compte.versionJeton !== (utilisateur.v ?? 0)) {
       throw new UnauthorizedException('Session expiree ou invalide');
     }
     requete.utilisateur = utilisateur;

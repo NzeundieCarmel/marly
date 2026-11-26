@@ -94,6 +94,19 @@ Verifier "Journal : entreprise refusee" 403 (Appeler Get "/journal" $a)
 Verifier "Journal : entreprise hors cabinet invisible" 0 $(Appeler Get "/journal" $marc | Out-Null; @(@($resultat) | Where-Object { $_.dossierId -eq $dossierA }).Count)
 Verifier "Journal : dossier d'un autre cabinet refuse" 404 (Appeler Get "/journal?dossierId=$dossierA" $marc)
 
+# Sessions revocables : deux appareils, puis "deconnecter partout"
+$emailSession = "s$(Get-Random)@test.cm"
+Appeler Post "/inscription/entreprise" $null @{ raisonSociale = "Session Test"; regime = "IGS"; nomGerant = "Gerant Test"; email = $emailSession; motDePasse = "Boutique2026" } | Out-Null
+$appareil1 = $resultat.jeton
+Appeler Post "/auth/connexion" $null @{ email = $emailSession; motDePasse = "Boutique2026" } | Out-Null
+$appareil2 = $resultat.jeton
+Verifier "Session : deux appareils connectes" "ok/ok" "$(Appeler Get "/auth/moi" $appareil1)/$(Appeler Get "/auth/moi" $appareil2)"
+Verifier "Session : deconnexion de tous les appareils" "ok" (Appeler Post "/auth/deconnexion-partout" $appareil1)
+Verifier "Session : premier appareil revoque" 401 (Appeler Get "/auth/moi" $appareil1)
+Verifier "Session : second appareil revoque" 401 (Appeler Get "/auth/moi" $appareil2)
+Appeler Post "/auth/connexion" $null @{ email = $emailSession; motDePasse = "Boutique2026" } | Out-Null
+Verifier "Session : nouvelle connexion acceptee" "ok" (Appeler Get "/auth/moi" $resultat.jeton)
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -gt 0) {

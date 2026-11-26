@@ -27,6 +27,15 @@ export class AuthController {
     return this.auth.connecter(dto);
   }
 
+  // Révoque toutes les sessions du compte, y compris celle qui fait la demande
+  @Post('deconnexion-partout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deconnecterPartout(
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+  ): Promise<void> {
+    await this.auth.deconnecterPartout(utilisateur.sub);
+  }
+
   @Get('moi')
   moi(
     @UtilisateurCourant() utilisateur: ChargeJeton,

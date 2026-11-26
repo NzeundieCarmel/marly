@@ -160,7 +160,7 @@ export class MotDePasseService {
       if (consomme.count !== 1) throw new BadRequestException(CODE_REFUSE);
       await tx.utilisateur.update({
         where: { id: utilisateur.id },
-        data: { motDePasseHache },
+        data: { motDePasseHache, versionJeton: { increment: 1 } },
       });
     });
     return { message: 'Mot de passe modifié. Vous pouvez vous connecter.' };

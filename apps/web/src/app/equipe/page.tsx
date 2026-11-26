@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { lireAcces, lireProfil } from "@/lib/api";
 import { CadreCabinet } from "@/components/cadre-cabinet";
+import { DeconnexionPartout } from "@/components/deconnexion-partout";
 import { GestionAcces } from "@/components/gestion-acces";
 
 async function ContenuEquipe() {
@@ -29,6 +30,11 @@ async function ContenuEquipe() {
           peutInviter={profil.role === "RESPONSABLE"}
         />
       </div>
+
+      <section aria-labelledby="titre-securite" className="flex max-w-3xl flex-col gap-3 rounded-2xl border border-line bg-surface p-5">
+        <h2 id="titre-securite" className="text-lg font-bold">Sécurité de ton compte</h2>
+        <DeconnexionPartout retour="/equipe" tutoiement />
+      </section>
     </CadreCabinet>
   );
 }

@@ -11,6 +11,8 @@ export interface ChargeJeton {
   role: RoleMarly;
   cabinetId: string;
   dossierId: string | null;
+  // Version des sessions du compte au moment de la signature (absente = 0)
+  v?: number;
 }
 
 export interface ReponseConnexion {
@@ -54,6 +56,7 @@ export class AuthService {
       role: utilisateur.role,
       cabinetId: utilisateur.cabinetId,
       dossierId: utilisateur.dossierId,
+      v: utilisateur.versionJeton,
     };
 
     return {
@@ -88,5 +91,13 @@ export class AuthService {
       autonome: utilisateur.cabinet.autonome,
       dossier: utilisateur.dossier,
     };
+  }
+
+  // Augmenter la version invalide d'un coup tous les jetons déjà émis pour ce compte
+  async deconnecterPartout(id: string): Promise<void> {
+    await this.prisma.utilisateur.update({
+      where: { id },
+      data: { versionJeton: { increment: 1 } },
+    });
   }
 }

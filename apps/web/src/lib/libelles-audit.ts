@@ -29,6 +29,7 @@ const LIBELLES: Record<string, string> = {
   "POST /facturation/factures/:id/reglements": "Règlement enregistré",
   "POST /facturation/factures/:id/reglements/:reglementId/supprimer": "Règlement retiré",
   "POST /facturation/factures/:id/relance": "Relance WhatsApp",
+  "POST /auth/deconnexion-partout": "Déconnexion de tous les appareils",
 };
 
 export function libelleAction(action: string): string {

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { lireProfil } from "@/lib/api";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { seDeconnecter } from "@/app/connexion/actions";
+import { DeconnexionPartout } from "@/components/deconnexion-partout";
 import Link from "next/link";
 
 async function ContenuProfil() {
@@ -75,6 +76,8 @@ async function ContenuProfil() {
           Se déconnecter
         </button>
       </form>
+
+      <DeconnexionPartout retour="/envoyer/profil" />
     </CadreTelephone>
   );
 }

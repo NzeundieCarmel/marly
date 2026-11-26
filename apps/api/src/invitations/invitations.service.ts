@@ -360,6 +360,7 @@ export class InvitationsService {
         role: utilisateur.role,
         cabinetId: utilisateur.cabinetId,
         dossierId: utilisateur.dossierId,
+        v: 0,
       },
       { expiresIn: this.dureeSecondes },
     );

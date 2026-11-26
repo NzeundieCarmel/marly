@@ -100,6 +100,7 @@ export class InscriptionService {
         role: session.role,
         cabinetId: session.cabinetId,
         dossierId: session.dossierId,
+        v: 0,
       },
       { expiresIn: this.dureeSecondes },
     );
