@@ -1,0 +1,66 @@
+# Marly en production. Seul Caddy est joignable depuis Internet (80 et 443).
+# Les secrets viennent du fichier .env du serveur, jamais du depot.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marly
+      POSTGRES_USER: marly
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - donnees-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marly -d marly"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    restart: unless-stopped
+    environment:
+      HOTE: 0.0.0.0
+      PORT: "4001"
+      DATABASE_URL: postgresql://marly:${POSTGRES_PASSWORD}@db:5432/marly
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_DUREE_SECONDES: ${JWT_DUREE_SECONDES:-28800}
+      INSCRIPTIONS_PAR_HEURE: ${INSCRIPTIONS_PAR_HEURE:-20}
+      INSCRIPTIONS_MAX_GLOBAL: ${INSCRIPTIONS_MAX_GLOBAL:-200}
+      MARLY_SECRET_RELAIS: ${MARLY_SECRET_RELAIS}
+      MARLY_URL_PUBLIQUE: ${MARLY_URL_PUBLIQUE:-https://marly-compta.com}
+      WEB_ORIGINE: ${MARLY_URL_PUBLIQUE:-https://marly-compta.com}
+    volumes:
+      - pieces:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:4001/api/v1
+      MARLY_SECRET_RELAIS: ${MARLY_SECRET_RELAIS}
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-donnees:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  donnees-db:
+  pieces:
+  caddy-donnees:
+  caddy-config:

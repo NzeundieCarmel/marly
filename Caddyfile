@@ -1,0 +1,18 @@
+# Caddy obtient et renouvelle seul le certificat HTTPS (Let's Encrypt)
+marly-compta.com {
+encode zstd gzip
+request_body {
+max_size 20MB
+}
+header {
+Strict-Transport-Security "max-age=31536000"
+X-Content-Type-Options "nosniff"
+Referrer-Policy "strict-origin-when-cross-origin"
+-Server
+}
+reverse_proxy web:3001
+}
+
+www.marly-compta.com {
+redir https://marly-compta.com{uri} permanent
+}
