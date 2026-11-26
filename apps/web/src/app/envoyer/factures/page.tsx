@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { lireProfil, lireProfilEmetteur, listerClientsFacture, listerFactures, type FactureResume } from "@/lib/api";
+import {
+  lireProfil,
+  lireProfilEmetteur,
+  listerClientsFacture,
+  listerFactures,
+  listerPaiements,
+  type EtatPaiement,
+  type FactureResume,
+} from "@/lib/api";
 import { formatJour } from "@/lib/calcul-facture";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { Pastille, type Ton } from "@/components/pastille";
@@ -12,11 +20,14 @@ const NOMBRE = new Intl.NumberFormat("fr-FR");
 const CARTE = "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4";
 const BOUTON = "flex h-11 items-center justify-center rounded-xl px-4 text-[15px] font-bold";
 
-function statut(f: FactureResume): { ton: Ton; texte: string } {
+function statut(f: FactureResume, paiement?: EtatPaiement | null): { ton: Ton; texte: string } {
   if (f.type === "AVOIR") return { ton: "neutral", texte: "Avoir" };
   if (f.statut === "BROUILLON") return { ton: "neutral", texte: "Brouillon" };
   if (f.statut === "ANNULEE") return { ton: "neutral", texte: "Annulée" };
-  return { ton: "info", texte: "Émise" };
+  if (paiement === "PAYEE") return { ton: "success", texte: "Payée" };
+  if (paiement === "EN_RETARD") return { ton: "danger", texte: "En retard" };
+  if (paiement === "PARTIELLE") return { ton: "info", texte: "Partielle" };
+  return { ton: "warning", texte: "À payer" };
 }
 
 function Ligne({ terme, valeur }: { terme: string; valeur: string | null }) {
@@ -29,13 +40,17 @@ function Ligne({ terme, valeur }: { terme: string; valeur: string | null }) {
 }
 
 async function ContenuFactures({ recherche }: { recherche: Recherche }) {
-  const [profil, emetteur, clients, factures, parametres] = await Promise.all([
+  const [profil, emetteur, clients, factures, paiements, parametres] = await Promise.all([
     lireProfil(),
     lireProfilEmetteur(),
     listerClientsFacture(),
     listerFactures(),
+    listerPaiements(),
     recherche,
   ]);
+  const etats = new Map(paiements.map((p) => [p.factureId, p.etat]));
+  const aEncaisser = paiements.filter((p) => p.etat && p.etat !== "PAYEE").reduce((s, p) => s + p.reste, 0);
+  const enRetard = paiements.filter((p) => p.etat === "EN_RETARD").reduce((s, p) => s + p.reste, 0);
   if (!profil.dossier) {
     redirect("/dossiers");
   }
@@ -43,6 +58,16 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
   return (
     <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="factures">
       <h1 className="text-[26px] font-bold leading-8 text-heading">Factures</h1>
+
+      {aEncaisser > 0 && (
+        <section aria-label="À encaisser" className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-4">
+          <span className="text-sm text-muted">À encaisser</span>
+          <strong className="text-[26px] leading-8 text-heading tabular-nums">{NOMBRE.format(aEncaisser)} FCFA</strong>
+          {enRetard > 0 && (
+            <span className="text-sm font-medium text-danger-ink">dont {NOMBRE.format(enRetard)} FCFA en retard</span>
+          )}
+        </section>
+      )}
 
       {parametres.fiche === "1" && (
         <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">
@@ -72,7 +97,7 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
       {factures.length > 0 && (
         <ul aria-label="Vos factures" className="overflow-hidden rounded-2xl border border-line bg-surface">
           {factures.map((f, i) => {
-            const s = statut(f);
+            const s = statut(f, etats.get(f.id));
             return (
               <li key={f.id} className={i > 0 ? "border-t border-line" : ""}>
                 <Link href={`/envoyer/factures/${f.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-survol">

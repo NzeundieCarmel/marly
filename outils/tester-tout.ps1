@@ -8,13 +8,13 @@ if (-not $env:MARLY_MDP_MARC) {
   exit 2
 }
 
-powershell -ExecutionPolicy Bypass -File (Join-Path $ici "tester-api.ps1")
-$codeApi = $LASTEXITCODE
+$codes = @()
+foreach ($script in @("tester-api.ps1", "tester-sprints-4-5.ps1", "tester-sprint-6.ps1")) {
+  powershell -ExecutionPolicy Bypass -File (Join-Path $ici $script)
+  $codes += $LASTEXITCODE
+}
 
-powershell -ExecutionPolicy Bypass -File (Join-Path $ici "tester-sprints-4-5.ps1")
-$codeSprints = $LASTEXITCODE
-
-if ($codeApi -ne 0 -or $codeSprints -ne 0) {
+if (@($codes | Where-Object { $_ -ne 0 }).Count -gt 0) {
   Write-Host "Au moins une serie de tests a echoue." -ForegroundColor Red
   exit 1
 }

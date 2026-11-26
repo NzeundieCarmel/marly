@@ -265,35 +265,38 @@ model ClientFacture {
 }
 
 model Facture {
-  id               String         @id @default(cuid())
-  dossier          Dossier        @relation(fields: [dossierId], references: [id], onDelete: Cascade)
-  dossierId        String
-  type             TypeFacture    @default(FACTURE)
-  statut           StatutFacture  @default(BROUILLON)
-  numero           String?
-  client           ClientFacture  @relation(fields: [clientId], references: [id], onDelete: NoAction)
-  clientId         String
-  dateEmission     DateTime?
-  dateEcheance     DateTime?
-  regime           Regime
-  tauxTva          Decimal        @db.Decimal(5, 2)
-  tauxRetenue      Decimal        @default(0) @db.Decimal(5, 2)
-  totalHt          Int            @default(0)
-  totalTva         Int            @default(0)
-  totalTtc         Int            @default(0)
-  retenue          Int            @default(0)
-  netAPayer        Int            @default(0)
-  emetteur         Json?
-  clientFige       Json?
-  factureOrigine   Facture?       @relation("Avoirs", fields: [factureOrigineId], references: [id])
-  factureOrigineId String?        @unique
-  avoir            Facture?       @relation("Avoirs")
-  lignes           LigneFacture[]
-  creeParId        String
-  creeLe           DateTime       @default(now())
-  emiseLe          DateTime?
-  jetonPartage     String?        @unique
-  piece            Piece?
+  id                String             @id @default(cuid())
+  dossier           Dossier            @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId         String
+  type              TypeFacture        @default(FACTURE)
+  statut            StatutFacture      @default(BROUILLON)
+  numero            String?
+  client            ClientFacture      @relation(fields: [clientId], references: [id], onDelete: NoAction)
+  clientId          String
+  dateEmission      DateTime?
+  dateEcheance      DateTime?
+  regime            Regime
+  tauxTva           Decimal            @db.Decimal(5, 2)
+  tauxRetenue       Decimal            @default(0) @db.Decimal(5, 2)
+  totalHt           Int                @default(0)
+  totalTva          Int                @default(0)
+  totalTtc          Int                @default(0)
+  retenue           Int                @default(0)
+  netAPayer         Int                @default(0)
+  emetteur          Json?
+  clientFige        Json?
+  factureOrigine    Facture?           @relation("Avoirs", fields: [factureOrigineId], references: [id])
+  factureOrigineId  String?            @unique
+  avoir             Facture?           @relation("Avoirs")
+  lignes            LigneFacture[]
+  creeParId         String
+  creeLe            DateTime           @default(now())
+  emiseLe           DateTime?
+  jetonPartage      String?            @unique
+  piece             Piece?
+  montantRegle      Int                @default(0)
+  derniereRelanceLe DateTime?
+  reglements        ReglementFacture[]
 
   @@unique([dossierId, numero])
   @@index([dossierId, statut])
@@ -350,4 +353,27 @@ model MemoireCompte {
 
   @@unique([dossierId, cleFournisseur])
   @@index([cleFournisseur])
+}
+
+enum ModeReglement {
+  ESPECES
+  VIREMENT
+  MTN_MOMO
+  ORANGE_MONEY
+  CHEQUE
+  AUTRE
+}
+
+model ReglementFacture {
+  id        String        @id @default(cuid())
+  facture   Facture       @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  factureId String
+  date      DateTime
+  montant   Int
+  mode      ModeReglement
+  reference String?
+  creeParId String
+  creeLe    DateTime      @default(now())
+
+  @@index([factureId])
 }

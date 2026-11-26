@@ -9,6 +9,7 @@ import { IconeRetour } from "@/components/icones";
 import { Pastille, type Ton } from "@/components/pastille";
 import { ActionAvoir, ActionsBrouillon } from "../boutons-facture";
 import { EditeurFacture } from "../editeur-facture";
+import { PanneauPaiement } from "../panneau-paiement";
 import { RecapFacture } from "../recap-facture";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
@@ -98,6 +99,9 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
       ) : (
         <>
           <RecapFacture facture={facture} />
+          {facture.type === "FACTURE" && facture.statut === "EMISE" && (
+            <PanneauPaiement facture={facture} aujourdhui={jourDouala(new Date())} />
+          )}
           {facture.type === "FACTURE" && facture.statut === "EMISE" && <ActionAvoir id={facture.id} />}
         </>
       )}

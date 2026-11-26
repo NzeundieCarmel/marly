@@ -433,3 +433,38 @@ export async function lireFacturePublique(jeton: string): Promise<FactureDocumen
 export function lireFactureDePiece(pieceId: string): Promise<FactureDocument> {
   return appelerApi<FactureDocument>(`/pieces/${encodeURIComponent(pieceId)}/facture`);
 }
+export type EtatPaiement = "PAYEE" | "PARTIELLE" | "EN_RETARD" | "A_PAYER";
+export type ModeReglement = "ESPECES" | "VIREMENT" | "MTN_MOMO" | "ORANGE_MONEY" | "CHEQUE" | "AUTRE";
+
+export interface Reglement {
+  id: string;
+  date: string;
+  montant: number;
+  mode: ModeReglement;
+  reference: string | null;
+}
+
+export interface Paiement {
+  factureId: string;
+  netAPayer: number;
+  montantRegle: number;
+  reste: number;
+  etat: EtatPaiement | null;
+  dateEcheance: string | null;
+  derniereRelanceLe: string | null;
+  reglements: Reglement[];
+}
+
+export interface ResumePaiement {
+  factureId: string;
+  etat: EtatPaiement | null;
+  reste: number;
+}
+
+export function lirePaiement(factureId: string): Promise<Paiement> {
+  return appelerApi<Paiement>(`/facturation/factures/${encodeURIComponent(factureId)}/paiement`);
+}
+
+export function listerPaiements(): Promise<ResumePaiement[]> {
+  return appelerApi<ResumePaiement[]>("/facturation/paiements");
+}
