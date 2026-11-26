@@ -75,7 +75,12 @@ export interface DetailPiece {
     recueLe: string;
   };
   dossier: { id: string; raisonSociale: string; regime: Regime; tauxTva: number; niu: string | null };
-  ecriture: { journal: string; proposee: boolean; lignes: LigneEcriture[] };
+  ecriture: {
+    journal: string;
+    proposee: boolean;
+    lignes: LigneEcriture[];
+    souvenir?: { compte: string; fois: number; source: "dossier" | "cabinet" } | null;
+  };
 }
 
 export const API_URL = process.env.API_URL ?? "http://127.0.0.1:4001/api/v1";

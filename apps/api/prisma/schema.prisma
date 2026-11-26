@@ -110,6 +110,7 @@ model Dossier {
   clientsFacture    ClientFacture[]
   factures          Facture[]
   compteursFacture  CompteurFacture[]
+  memoiresCompte    MemoireCompte[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -335,4 +336,18 @@ model CodeReinitialisation {
   creeLe        DateTime    @default(now())
 
   @@index([utilisateurId, creeLe])
+}
+
+model MemoireCompte {
+  id             String   @id @default(cuid())
+  dossier        Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId      String
+  cleFournisseur String
+  compte         String
+  journal        String
+  utilisations   Int      @default(1)
+  majLe          DateTime @updatedAt
+
+  @@unique([dossierId, cleFournisseur])
+  @@index([cleFournisseur])
 }

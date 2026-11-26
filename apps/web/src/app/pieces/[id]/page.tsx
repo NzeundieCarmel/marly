@@ -138,6 +138,15 @@ async function ContenuPiece({ params }: { params: Promise<{ id: string }> }) {
             )}
           </section>
 
+          {ecriture.proposee && ecriture.souvenir && (
+            <p className="rounded-xl bg-info-bg px-3 py-2.5 text-sm text-info-ink">
+              Compte <strong>{ecriture.souvenir.compte}</strong> proposé d&apos;après{" "}
+              {ecriture.souvenir.fois} validation{ecriture.souvenir.fois > 1 ? "s" : ""} précédente
+              {ecriture.souvenir.fois > 1 ? "s" : ""} pour ce fournisseur
+              {ecriture.souvenir.source === "cabinet" ? ", dans un autre dossier du cabinet" : ""}.
+            </p>
+          )}
+
           <EditeurEcriture
             key={piece.id}
             pieceId={piece.id}

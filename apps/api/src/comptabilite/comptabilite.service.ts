@@ -10,6 +10,8 @@ import { extname, join } from 'node:path';
 import type { ChargeJeton } from '../auth/auth.service';
 import { DossiersService } from '../dossiers/dossiers.service';
 import { FacturesService } from '../facturation/factures.service';
+import { MemoireComptesService } from './memoire-comptes.service';
+import type { Souvenir } from './memoire-comptes.service';
 import type { FactureDocument } from '../facturation/factures.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValiderPieceDto } from './dto/valider-piece.dto';
@@ -42,6 +44,7 @@ export interface DetailPiece {
     journal: string;
     proposee: boolean;
     lignes: LigneEcritureProposee[];
+    souvenir?: Souvenir | null;
   };
 }
 
@@ -57,6 +60,7 @@ export class ComptabiliteService {
     private readonly prisma: PrismaService,
     private readonly dossiers: DossiersService,
     private readonly factures: FacturesService,
+    private readonly memoire: MemoireComptesService,
   ) {}
 
   // Charge une pièce en vérifiant que l'utilisateur a accès à son dossier
@@ -106,7 +110,13 @@ export class ComptabiliteService {
           }
         : piece.factureId
           ? { ...(await this.ecritureVente(piece.factureId)), proposee: true }
-          : { ...proposerEcriture(piece, dossier), proposee: true };
+          : {
+              ...(await this.memoire.appliquer(
+                piece,
+                proposerEcriture(piece, dossier),
+              )),
+              proposee: true,
+            };
 
     return {
       piece: {
@@ -183,6 +193,7 @@ export class ComptabiliteService {
       }),
     ]);
 
+    await this.memoire.retenir(piece, dto);
     return this.detail(pieceId, utilisateur);
   }
 
