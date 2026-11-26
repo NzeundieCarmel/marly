@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { mettreEnAttente, synchroniser, type ResultatSynchro } from "@/lib/file-attente";
+import { compresserImage, formatTaille } from "@/lib/compresser-image";
 import {
   IconeAppareil,
   IconeCheck,
@@ -108,6 +109,11 @@ export function EcranEnvoi({
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const [enAttente, setEnAttente] = useState(0);
+  // Taille avant et après optimisation ; « apres » vaut null pendant la compression
+  const [optimisation, setOptimisation] = useState<{ avant: number; apres: number | null } | null>(null);
+  // Numéro de la dernière photo choisie : une compression plus ancienne qui finit en retard est ignorée
+  const selection = useRef(0);
+  const enOptimisation = optimisation !== null && optimisation.apres === null;
 
   const appliquerResultat = useCallback(
     (resultat: ResultatSynchro) => {
@@ -167,10 +173,18 @@ export function EcranEnvoi({
     if (urlApercu.current) URL.revokeObjectURL(urlApercu.current);
     urlApercu.current = choisi.type.startsWith("image/") ? URL.createObjectURL(choisi) : null;
     setApercu(urlApercu.current);
-    setFichier(choisi);
+    setFichier(null);
+    setOptimisation({ avant: choisi.size, apres: null });
     if (demandeChoisie !== undefined) setDemande(demandeChoisie);
     setMessage(null);
     setVue("formulaire");
+
+    const numero = ++selection.current;
+    void compresserImage(choisi).then((resultat) => {
+      if (selection.current !== numero) return;
+      setFichier(resultat);
+      setOptimisation({ avant: choisi.size, apres: resultat.size });
+    });
   }
 
   function revenir() {
@@ -180,6 +194,8 @@ export function EcranEnvoi({
     setFichier(null);
     setDemande(null);
     setCategorie(CATEGORIES[0]);
+    setOptimisation(null);
+    selection.current += 1;
     setVue("accueil");
   }
 
@@ -314,6 +330,16 @@ export function EcranEnvoi({
           </label>
         </div>
 
+        {enOptimisation && (
+          <p role="status" className="text-[13px] text-muted">Optimisation de la photo…</p>
+        )}
+        {optimisation?.apres != null && optimisation.apres < optimisation.avant && (
+          <p role="status" className="text-[13px] text-muted">
+            Photo optimisée : {formatTaille(optimisation.avant)} →{" "}
+            <strong className="text-ink">{formatTaille(optimisation.apres)}</strong>
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="date" className="text-sm font-medium text-muted">Date</label>
@@ -353,11 +379,13 @@ export function EcranEnvoi({
 
         <button
           type="submit"
-          disabled={envoiEnCours}
+          disabled={envoiEnCours || enOptimisation}
           className="mt-2 flex h-13 items-center justify-center gap-2.5 rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover disabled:opacity-60"
         >
           <IconeEnvoyer width={20} height={20} />
-           {envoiEnCours
+           {enOptimisation
+            ? "Optimisation de la photo…"
+            : envoiEnCours
             ? "Envoi en cours…"
             : !enLigne
               ? "Garder et envoyer plus tard"
