@@ -4,12 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { StatutPiece } from '@prisma/client';
+import { OrigineEcriture, StatutPiece } from '@prisma/client';
 import { access } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import type { ChargeJeton } from '../auth/auth.service';
 import { DossiersService } from '../dossiers/dossiers.service';
 import { FacturesService } from '../facturation/factures.service';
+import { GrandLivreService } from './grand-livre.service';
 import { MemoireComptesService } from './memoire-comptes.service';
 import type { Souvenir } from './memoire-comptes.service';
 import type { FactureDocument } from '../facturation/factures.service';
@@ -61,6 +62,7 @@ export class ComptabiliteService {
     private readonly dossiers: DossiersService,
     private readonly factures: FacturesService,
     private readonly memoire: MemoireComptesService,
+    private readonly grandLivre: GrandLivreService,
   ) {}
 
   // Charge une pièce en vérifiant que l'utilisateur a accès à son dossier
@@ -169,9 +171,9 @@ export class ComptabiliteService {
     }
 
     // Tout ou rien : les lignes et le statut sont enregistrés ensemble
-    await this.prisma.$transaction([
-      this.prisma.ligneEcriture.deleteMany({ where: { pieceId } }),
-      this.prisma.ligneEcriture.createMany({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ligneEcriture.deleteMany({ where: { pieceId } });
+      await tx.ligneEcriture.createMany({
         data: dto.lignes.map((l, index) => ({
           pieceId,
           ordre: index + 1,
@@ -181,8 +183,8 @@ export class ComptabiliteService {
           debit: l.debit,
           credit: l.credit,
         })),
-      }),
-      this.prisma.piece.update({
+      });
+      await tx.piece.update({
         where: { id: pieceId },
         data: {
           statut: StatutPiece.TRAITEE,
@@ -190,8 +192,19 @@ export class ComptabiliteService {
           valideLe: new Date(),
           valideParId: utilisateur.sub,
         },
-      }),
-    ]);
+      });
+      // L'ecriture entre aussi au grand livre de l'entreprise, dans la meme transaction
+      await this.grandLivre.passer(tx, {
+        dossierId: piece.dossierId,
+        journal: dto.journal,
+        date: piece.date,
+        libelle: piece.fournisseur ?? piece.categorie,
+        origine: OrigineEcriture.PIECE,
+        origineId: pieceId,
+        creeParId: utilisateur.sub,
+        lignes: dto.lignes,
+      });
+    });
 
     await this.memoire.retenir(piece, dto);
     return this.detail(pieceId, utilisateur);

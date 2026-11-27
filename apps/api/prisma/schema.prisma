@@ -112,6 +112,8 @@ model Dossier {
   factures          Facture[]
   compteursFacture  CompteurFacture[]
   memoiresCompte    MemoireCompte[]
+  ecritures         EcritureComptable[]
+  comptesPerso      CompteDossier[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -394,4 +396,69 @@ model JournalAudit {
 
   @@index([cabinetId, creeLe])
   @@index([dossierId, creeLe])
+}
+
+enum OrigineEcriture {
+  PIECE
+  CAISSE
+  STOCK
+  MANUELLE
+}
+
+// Grand livre : chaque ecriture equilibree de l'entreprise, quelle que soit son origine
+model EcritureComptable {
+  id         String               @id @default(cuid())
+  dossier    Dossier              @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId  String
+  journal    String
+  annee      Int
+  numero     Int
+  date       DateTime
+  libelle    String
+  origine    OrigineEcriture
+  origineId  String?
+  creeParId  String
+  creeLe     DateTime             @default(now())
+  mouvements MouvementComptable[]
+
+  @@unique([dossierId, journal, annee, numero])
+  @@unique([origine, origineId])
+  @@index([dossierId, date])
+}
+
+model MouvementComptable {
+  id         String            @id @default(cuid())
+  ecriture   EcritureComptable @relation(fields: [ecritureId], references: [id], onDelete: Cascade)
+  ecritureId String
+  dossierId  String
+  date       DateTime
+  ordre      Int
+  compte     String
+  libelle    String
+  tiers      String?
+  debit      Int               @default(0)
+  credit     Int               @default(0)
+
+  @@index([dossierId, compte, date])
+  @@index([ecritureId])
+}
+
+// Comptes ajoutes par l'entreprise a son plan comptable
+model CompteDossier {
+  dossier   Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId String
+  numero    String
+  intitule  String
+  creeLe    DateTime @default(now())
+
+  @@id([dossierId, numero])
+}
+
+model CompteurEcriture {
+  dossierId String
+  journal   String
+  annee     Int
+  dernier   Int
+
+  @@id([dossierId, journal, annee])
 }
