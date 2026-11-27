@@ -23,7 +23,6 @@ import { ValiderPieceDto } from './dto/valider-piece.dto';
 export class ComptabiliteController {
   constructor(private readonly compta: ComptabiliteService) {}
 
-  @Roles('RESPONSABLE', 'COMPTABLE')
   @Get(':id')
   detail(
     @Param('id') id: string,
@@ -56,7 +55,6 @@ export class ComptabiliteController {
     return this.compta.facture(id, utilisateur);
   }
 
-  @Roles('RESPONSABLE', 'COMPTABLE')
   @Post(':id/valider')
   @HttpCode(HttpStatus.OK)
   valider(

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -88,6 +89,7 @@ export class ComptabiliteService {
     utilisateur: ChargeJeton,
   ): Promise<DetailPiece> {
     const piece = await this.chargerPiece(pieceId, utilisateur);
+    await this.verifierTenue(piece.dossier.cabinetId, utilisateur);
     const dossier = {
       id: piece.dossier.id,
       raisonSociale: piece.dossier.raisonSociale,
@@ -146,6 +148,7 @@ export class ComptabiliteService {
     dto: ValiderPieceDto,
   ): Promise<DetailPiece> {
     const piece = await this.chargerPiece(pieceId, utilisateur);
+    await this.verifierTenue(piece.dossier.cabinetId, utilisateur);
 
     if (piece.statut === StatutPiece.TRAITEE) {
       throw new ConflictException('Piece deja validee');
@@ -210,6 +213,67 @@ export class ComptabiliteService {
     return this.detail(pieceId, utilisateur);
   }
 
+  // Le gerant ne tient lui-meme la comptabilite que si son entreprise est autonome
+  private async verifierTenue(
+    cabinetId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<void> {
+    if (utilisateur.role !== 'PME') return;
+    const cabinet = await this.prisma.cabinet.findUnique({
+      where: { id: cabinetId },
+      select: { autonome: true },
+    });
+    if (!cabinet?.autonome) {
+      throw new ForbiddenException(
+        'La comptabilite de ce dossier est tenue par votre cabinet',
+      );
+    }
+  }
+
+  // Comptabilise d'un coup les pieces recues, chacune avec l'ecriture proposee par Marly
+  async comptabiliserEnAttente(
+    dossierId: string,
+    utilisateur: ChargeJeton,
+  ): Promise<{ comptabilisees: number; ignorees: number }> {
+    try {
+      await this.dossiers.verifierAcces(dossierId, utilisateur);
+    } catch {
+      throw new NotFoundException('Dossier introuvable');
+    }
+    const dossier = await this.prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { cabinetId: true },
+    });
+    await this.verifierTenue(dossier?.cabinetId ?? '', utilisateur);
+
+    const pieces = await this.prisma.piece.findMany({
+      where: { dossierId, statut: StatutPiece.RECUE },
+      orderBy: { date: 'asc' },
+      select: { id: true },
+    });
+    let comptabilisees = 0;
+    let ignorees = 0;
+    for (const { id } of pieces) {
+      try {
+        const { ecriture } = await this.detail(id, utilisateur);
+        await this.valider(id, utilisateur, {
+          journal: ecriture.journal,
+          lignes: ecriture.lignes.map((l) => ({
+            compte: l.compte,
+            libelle: l.libelle,
+            tiers: l.tiers,
+            debit: l.debit,
+            credit: l.credit,
+          })),
+        });
+        comptabilisees++;
+      } catch {
+        // Piece incomplete (montant nul, compte invalide...) : laissee pour une validation a la main
+        ignorees++;
+      }
+    }
+    return { comptabilisees, ignorees };
+  }
   async fichier(
     pieceId: string,
     utilisateur: ChargeJeton,

@@ -92,6 +92,29 @@ if ($env:MARLY_MDP_MARC) {
   Verifier "Isolation : un cabinet tiers ne voit rien" 404 (Appeler Get "$c/balance" $script:resultat.jeton)
 }
 
+# Bloc 1b : le gerant comptabilise lui-meme ses pieces
+Appeler Post "$c/comptabiliser" $j | Out-Null
+Verifier "Gerant autonome : comptabilisation groupee" "0/0" "$($script:resultat.comptabilisees)/$($script:resultat.ignorees)"
+Verifier "Gerant autonome : piece inconnue" 404 (Appeler Get "/pieces/piece-inconnue" $j)
+Verifier "Isolation : comptabilisation chez une autre entreprise" 404 (Appeler Post "$c/comptabiliser" $autre.jeton)
+
+if ($env:MARLY_MDP_MARC) {
+  # Une entreprise qui rejoint un cabinet ne tient plus elle-meme sa comptabilite
+  $r = NouvelleEntreprise "Entreprise Rattachee"
+  Appeler Get "/comptables" $r.jeton | Out-Null
+  $cabinet = @($script:resultat) | Where-Object { $_.nom -like "*Ngando*" } | Select-Object -First 1
+  Appeler Post "/rattachements" $r.jeton @{ cabinetId = $cabinet.id; message = "Test du sprint 7" } | Out-Null
+  $demande = $script:resultat.demande.id
+  Appeler Post "/auth/connexion" $null @{ email = "marc@exemple.cm"; motDePasse = $env:MARLY_MDP_MARC } | Out-Null
+  $marc = $script:resultat.jeton
+  Appeler Post "/rattachements/$demande/accepter" $marc | Out-Null
+  $cr = "/dossiers/$($r.dossier)/comptabilite"
+  $operation = @{ journal = "CA"; date = "2026-11-10"; libelle = "Apport"; lignes = @((Ligne "571" 50000 0), (Ligne "104" 0 50000)) }
+  Verifier "Suivi par un cabinet : saisie refusee au gerant" 403 (Appeler Post "$cr/ecritures" $r.jeton $operation)
+  Verifier "Suivi par un cabinet : comptabilisation refusee au gerant" 403 (Appeler Post "$cr/comptabiliser" $r.jeton)
+  Verifier "Suivi par un cabinet : consultation permise" "ok" (Appeler Get "$cr/balance" $r.jeton)
+  Verifier "Suivi par un cabinet : le cabinet saisit" "ok" (Appeler Post "$cr/ecritures" $marc $operation)
+}
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }

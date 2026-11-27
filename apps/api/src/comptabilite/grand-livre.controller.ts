@@ -1,12 +1,25 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import type { ChargeJeton } from '../auth/auth.service';
 import { UtilisateurCourant } from '../auth/utilisateur-courant.decorator';
+import { ComptabiliteService } from './comptabilite.service';
 import { CompteDto, EcritureManuelleDto } from './dto/grand-livre.dto';
 import { GrandLivreService } from './grand-livre.service';
 
 @Controller('dossiers/:dossierId/comptabilite')
 export class GrandLivreController {
-  constructor(private readonly grandLivre: GrandLivreService) {}
+  constructor(
+    private readonly grandLivre: GrandLivreService,
+    private readonly compta: ComptabiliteService,
+  ) {}
 
   @Get('plan')
   plan(
@@ -32,6 +45,16 @@ export class GrandLivreController {
     @Body() dto: EcritureManuelleDto,
   ) {
     return this.grandLivre.saisir(dossierId, utilisateur, dto);
+  }
+
+  // Toutes les pieces recues, avec l'ecriture proposee par Marly
+  @Post('comptabiliser')
+  @HttpCode(HttpStatus.OK)
+  comptabiliser(
+    @Param('dossierId') dossierId: string,
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+  ) {
+    return this.compta.comptabiliserEnAttente(dossierId, utilisateur);
   }
 
   @Get('journal')

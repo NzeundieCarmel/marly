@@ -484,3 +484,80 @@ export function lireJournal(dossierId?: string): Promise<EntreeJournal[]> {
   const filtre = dossierId ? `?dossierId=${encodeURIComponent(dossierId)}` : "";
   return appelerApi<EntreeJournal[]>(`/journal${filtre}`);
 }
+// Comptabilité générale du dossier : plan, balance, journaux, grand livre
+export interface CompteDuPlan {
+  numero: string;
+  intitule: string;
+  perso: boolean;
+}
+
+export interface LigneBalance {
+  compte: string;
+  intitule: string;
+  debit: number;
+  credit: number;
+  soldeDebiteur: number;
+  soldeCrediteur: number;
+}
+
+export interface Balance {
+  lignes: LigneBalance[];
+  totalDebit: number;
+  totalCredit: number;
+  equilibree: boolean;
+}
+
+export interface EcritureJournal {
+  id: string;
+  journal: string;
+  numero: number;
+  date: string;
+  libelle: string;
+  origine: "PIECE" | "CAISSE" | "STOCK" | "MANUELLE";
+  mouvements: { compte: string; intitule: string; libelle: string; tiers: string | null; debit: number; credit: number }[];
+}
+
+export interface GrandLivreCompte {
+  compte: string;
+  intitule: string;
+  soldeInitial: number;
+  lignes: {
+    date: string;
+    journal: string;
+    numero: number;
+    compte: string;
+    libelle: string;
+    tiers: string | null;
+    debit: number;
+    credit: number;
+    solde: number;
+  }[];
+  totalDebit: number;
+  totalCredit: number;
+  soldeFinal: number;
+}
+
+function cheminCompta(dossierId: string, suite: string): string {
+  return `/dossiers/${encodeURIComponent(dossierId)}/comptabilite/${suite}`;
+}
+
+export function lirePlanComptable(dossierId: string): Promise<CompteDuPlan[]> {
+  return appelerApi<CompteDuPlan[]>(cheminCompta(dossierId, "plan"));
+}
+
+export function lireBalance(dossierId: string, du?: string, au?: string): Promise<Balance> {
+  const p = new URLSearchParams();
+  if (du) p.set("du", du);
+  if (au) p.set("au", au);
+  const q = p.toString();
+  return appelerApi<Balance>(cheminCompta(dossierId, `balance${q ? `?${q}` : ""}`));
+}
+
+export function lireJournalComptable(dossierId: string, journal?: string): Promise<EcritureJournal[]> {
+  const q = journal ? `?journal=${encodeURIComponent(journal)}` : "";
+  return appelerApi<EcritureJournal[]>(cheminCompta(dossierId, `journal${q}`));
+}
+
+export function lireGrandLivre(dossierId: string, compte: string): Promise<GrandLivreCompte> {
+  return appelerApi<GrandLivreCompte>(cheminCompta(dossierId, `grand-livre?compte=${encodeURIComponent(compte)}`));
+}

@@ -8,6 +8,7 @@ import { CadreTelephone } from "@/components/cadre-telephone";
 import { IconeRetour } from "@/components/icones";
 import { Pastille } from "@/components/pastille";
 import { ApercuPiece } from "./apercu-piece";
+import { EcriturePiece } from "./ecriture-piece";
 
 function Ligne({ terme, children, premiere = false }: { terme: string; children: React.ReactNode; premiere?: boolean }) {
   return (
@@ -72,6 +73,10 @@ async function ContenuFiche({ parametres }: { parametres: Promise<{ id: string }
           <Pastille ton={statut.ton}>{statut.texte}</Pastille>
         </Ligne>
       </dl>
+
+      {profil.autonome && !piece.factureId && (
+        <EcriturePiece pieceId={piece.id} dossierId={profil.dossier.id} statut={piece.statut} />
+      )}
 
       <Link
         href={`/envoyer/pieces/${encodeURIComponent(piece.id)}/fiche`}

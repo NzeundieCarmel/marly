@@ -29,6 +29,9 @@ const LIBELLES: Record<string, string> = {
   "POST /facturation/factures/:id/reglements": "Règlement enregistré",
   "POST /facturation/factures/:id/reglements/:reglementId/supprimer": "Règlement retiré",
   "POST /facturation/factures/:id/relance": "Relance WhatsApp",
+  "POST /dossiers/:dossierId/comptabilite/ecritures": "Opération saisie en comptabilité",
+  "POST /dossiers/:dossierId/comptabilite/comptes": "Compte ajouté au plan comptable",
+  "POST /dossiers/:dossierId/comptabilite/comptabiliser": "Pièces comptabilisées",
   "POST /auth/deconnexion-partout": "Déconnexion de tous les appareils",
 };
 
