@@ -32,6 +32,10 @@ const LIBELLES: Record<string, string> = {
   "POST /dossiers/:dossierId/comptabilite/ecritures": "Opération saisie en comptabilité",
   "POST /dossiers/:dossierId/comptabilite/comptes": "Compte ajouté au plan comptable",
   "POST /dossiers/:dossierId/comptabilite/comptabiliser": "Pièces comptabilisées",
+  "POST /dossiers/:dossierId/stock/articles": "Article créé",
+  "PATCH /dossiers/:dossierId/stock/articles/:id": "Article modifié",
+  "POST /dossiers/:dossierId/stock/articles/:id/mouvements": "Mouvement de stock",
+  "POST /dossiers/:dossierId/stock/articles/:id/inventaire": "Inventaire d'un article",
   "POST /auth/deconnexion-partout": "Déconnexion de tous les appareils",
 };
 

@@ -114,6 +114,7 @@ model Dossier {
   memoiresCompte    MemoireCompte[]
   ecritures         EcritureComptable[]
   comptesPerso      CompteDossier[]
+  articles          Article[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -461,4 +462,58 @@ model CompteurEcriture {
   dernier   Int
 
   @@id([dossierId, journal, annee])
+}
+
+enum TypeMouvementStock {
+  ENTREE
+  SORTIE
+  INVENTAIRE
+}
+
+// Article vendu ou achete par l'entreprise ; son stock est valorise au cout moyen pondere
+model Article {
+  id          String           @id @default(cuid())
+  dossier     Dossier          @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId   String
+  reference   String
+  nom         String
+  categorie   String?
+  unite       String
+  prixVente   Int
+  tauxTva     Int
+  suiviStock  Boolean          @default(true)
+  seuilAlerte Int              @default(0)
+  quantite    Int              @default(0)
+  valeurStock Int              @default(0)
+  coutMoyen   Int              @default(0)
+  actif       Boolean          @default(true)
+  creeLe      DateTime         @default(now())
+  modifieLe   DateTime         @updatedAt
+  mouvements  MouvementStock[]
+
+  @@unique([dossierId, reference])
+  @@index([dossierId, nom])
+}
+
+// Chaque variation de stock : quantite et valeur signees (positives a l'entree)
+model MouvementStock {
+  id            String             @id @default(cuid())
+  article       Article            @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId     String
+  dossierId     String
+  type          TypeMouvementStock
+  date          DateTime
+  quantite      Int
+  coutUnitaire  Int
+  valeur        Int
+  quantiteApres Int
+  valeurApres   Int
+  motif         String
+  origine       String?
+  origineId     String?
+  creeParId     String
+  creeLe        DateTime           @default(now())
+
+  @@index([articleId, date])
+  @@index([dossierId, date])
 }

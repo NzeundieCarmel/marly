@@ -561,3 +561,66 @@ export function lireJournalComptable(dossierId: string, journal?: string): Promi
 export function lireGrandLivre(dossierId: string, compte: string): Promise<GrandLivreCompte> {
   return appelerApi<GrandLivreCompte>(cheminCompta(dossierId, `grand-livre?compte=${encodeURIComponent(compte)}`));
 }
+// Stock : articles, mouvements et valeur au coût moyen pondéré
+export type EtatStock = "EN_STOCK" | "STOCK_BAS" | "RUPTURE" | "SANS_SUIVI";
+
+export interface Article {
+  id: string;
+  reference: string;
+  nom: string;
+  categorie: string | null;
+  unite: string;
+  prixVente: number;
+  tauxTva: number;
+  suiviStock: boolean;
+  seuilAlerte: number;
+  quantite: number;
+  valeurStock: number;
+  coutMoyen: number;
+  actif: boolean;
+  etat: EtatStock;
+}
+
+export interface MouvementStock {
+  id: string;
+  type: "ENTREE" | "SORTIE" | "INVENTAIRE";
+  date: string;
+  quantite: number;
+  coutUnitaire: number;
+  valeur: number;
+  quantiteApres: number;
+  valeurApres: number;
+  motif: string;
+  origine: string | null;
+}
+
+export interface FicheArticle extends Article {
+  mouvements: MouvementStock[];
+}
+
+export interface ResumeStock {
+  articles: number;
+  valeur: number;
+  ruptures: number;
+  stockBas: number;
+}
+
+function cheminStock(dossierId: string, suite: string): string {
+  return `/dossiers/${encodeURIComponent(dossierId)}/stock/${suite}`;
+}
+
+export function listerArticles(dossierId: string, recherche?: string, alerte?: boolean): Promise<Article[]> {
+  const params = new URLSearchParams();
+  if (recherche) params.set("recherche", recherche);
+  if (alerte) params.set("alerte", "1");
+  const q = params.toString();
+  return appelerApi<Article[]>(cheminStock(dossierId, `articles${q ? `?${q}` : ""}`));
+}
+
+export function lireArticle(dossierId: string, id: string): Promise<FicheArticle> {
+  return appelerApi<FicheArticle>(cheminStock(dossierId, `articles/${encodeURIComponent(id)}`));
+}
+
+export function lireResumeStock(dossierId: string): Promise<ResumeStock> {
+  return appelerApi<ResumeStock>(cheminStock(dossierId, "resume"));
+}

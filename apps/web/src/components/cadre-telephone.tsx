@@ -2,16 +2,17 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { initiales } from "@/lib/format";
 import { BoutonTheme } from "./bouton-theme";
-import { IconeAppareil, IconeCompta, IconePiece, IconeProfil, Monogramme } from "./icones";
+import { IconeAppareil, IconeCompta, IconePiece, IconeProfil, IconeStock, Monogramme } from "./icones";
 import { IconeFacture } from "./icone-facture";
 
-export type Onglet = "envoyer" | "pieces" | "factures" | "compta" | "profil";
+export type Onglet = "envoyer" | "pieces" | "factures" | "compta" | "stock" | "profil";
 
 const ONGLETS: { cle: Onglet; href: string; libelle: string; Icone: typeof IconeAppareil }[] = [
   { cle: "envoyer", href: "/envoyer", libelle: "Envoyer", Icone: IconeAppareil },
   { cle: "pieces", href: "/envoyer/pieces", libelle: "Mes pièces", Icone: IconePiece },
   { cle: "factures", href: "/envoyer/factures", libelle: "Factures", Icone: IconeFacture },
   { cle: "compta", href: "/envoyer/compta", libelle: "Compta", Icone: IconeCompta },
+  { cle: "stock", href: "/envoyer/stock", libelle: "Stock", Icone: IconeStock },
   { cle: "profil", href: "/envoyer/profil", libelle: "Profil", Icone: IconeProfil },
 ];
 

@@ -115,6 +115,42 @@ if ($env:MARLY_MDP_MARC) {
   Verifier "Suivi par un cabinet : consultation permise" "ok" (Appeler Get "$cr/balance" $r.jeton)
   Verifier "Suivi par un cabinet : le cabinet saisit" "ok" (Appeler Post "$cr/ecritures" $marc $operation)
 }
+# Bloc 2 : articles et stock au cout moyen pondere
+$s = "/dossiers/$($e.dossier)/stock"
+Verifier "Stock : article cree avec stock initial" "ok" (Appeler Post "$s/articles" $j @{ nom = "Ciment 50 kg"; reference = "cim-50"; unite = "sac"; prixVente = 5500; tauxTva = 1925; seuilAlerte = 0; quantiteInitiale = 10; coutInitial = 4000 })
+$art = $script:resultat
+Verifier "Stock : 10 sacs a 4000" "CIM-50/10/4000/40000" "$($art.reference)/$($art.quantite)/$($art.coutMoyen)/$($art.valeurStock)"
+Verifier "Stock : reference en double refusee" 409 (Appeler Post "$s/articles" $j @{ nom = "Doublon"; reference = "CIM-50"; unite = "sac"; prixVente = 1; tauxTva = 0 })
+Verifier "Stock : taux de TVA invalide refuse" 400 (Appeler Post "$s/articles" $j @{ nom = "Taux"; reference = "TX-1"; unite = "sac"; prixVente = 1; tauxTva = 1800 })
+Verifier "Stock : stock initial sans cout refuse" 400 (Appeler Post "$s/articles" $j @{ nom = "Sans cout"; reference = "SC-1"; unite = "sac"; prixVente = 1; tauxTva = 0; quantiteInitiale = 5 })
+$a = "$s/articles/$($art.id)"
+Verifier "Stock : entree sans cout refusee" 400 (Appeler Post "$a/mouvements" $j @{ type = "ENTREE"; quantite = 5 })
+Appeler Post "$a/mouvements" $j @{ type = "ENTREE"; quantite = 20; coutUnitaire = 4300; motif = "Achat CIMENCO" } | Out-Null
+Verifier "Stock : cout moyen pondere apres entree" "30/4200/126000" "$($script:resultat.quantite)/$($script:resultat.coutMoyen)/$($script:resultat.valeurStock)"
+Appeler Post "$a/mouvements" $j @{ type = "SORTIE"; quantite = 12; motif = "Casse" } | Out-Null
+Verifier "Stock : sortie au cout moyen" "18/4200/75600" "$($script:resultat.quantite)/$($script:resultat.coutMoyen)/$($script:resultat.valeurStock)"
+Verifier "Stock : sortie superieure au stock refusee" 409 (Appeler Post "$a/mouvements" $j @{ type = "SORTIE"; quantite = 19 })
+Appeler Post "$a/inventaire" $j @{ quantiteReelle = 17 } | Out-Null
+Verifier "Stock : inventaire, un sac manquant" "17/71400" "$($script:resultat.quantite)/$($script:resultat.valeurStock)"
+Appeler Get $a $j | Out-Null
+Verifier "Stock : fiche, 4 mouvements" "4/-1" "$(@($script:resultat.mouvements).Count)/$($script:resultat.mouvements[0].quantite)"
+Appeler Patch $a $j @{ prixVente = 6000 } | Out-Null
+Verifier "Stock : prix modifie" "6000/17" "$($script:resultat.prixVente)/$($script:resultat.quantite)"
+Appeler Post "$s/articles" $j @{ nom = "Pointes 70 mm"; reference = "PTE-70"; unite = "kg"; prixVente = 1200; tauxTva = 1925; seuilAlerte = 10; quantiteInitiale = 6; coutInitial = 950 } | Out-Null
+Appeler Post "$s/articles" $j @{ nom = "Tole bac 3 m"; reference = "TOL-3"; unite = "feuille"; prixVente = 7800; tauxTva = 1925; seuilAlerte = 5 } | Out-Null
+Appeler Post "$s/articles" $j @{ nom = "Livraison"; reference = "SRV-LIV"; unite = "paquet"; prixVente = 2000; tauxTva = 1925; suiviStock = $false } | Out-Null
+$service = $script:resultat
+Verifier "Stock : service, mouvement refuse" 400 (Appeler Post "$s/articles/$($service.id)/mouvements" $j @{ type = "ENTREE"; quantite = 1; coutUnitaire = 10 })
+Appeler Get "$s/resume" $j | Out-Null
+Verifier "Stock : resume (articles/ruptures/bas/valeur)" "3/1/1/77100" "$($script:resultat.articles)/$($script:resultat.ruptures)/$($script:resultat.stockBas)/$($script:resultat.valeur)"
+Appeler Get "$s/articles?alerte=1" $j | Out-Null
+Verifier "Stock : filtre a reapprovisionner" 2 @($script:resultat).Count
+Appeler Get "$s/articles?recherche=cim" $j | Out-Null
+Verifier "Stock : recherche" "1/CIM-50" "$(@($script:resultat).Count)/$(@($script:resultat)[0].reference)"
+Verifier "Isolation : fiche d'article d'une autre entreprise" 404 (Appeler Get $a $autre.jeton)
+Verifier "Isolation : article vu depuis un autre dossier" 404 (Appeler Get "/dossiers/$($autre.dossier)/stock/articles/$($art.id)" $autre.jeton)
+Verifier "Isolation : mouvement chez une autre entreprise" 404 (Appeler Post "$a/mouvements" $autre.jeton @{ type = "SORTIE"; quantite = 1 })
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }
