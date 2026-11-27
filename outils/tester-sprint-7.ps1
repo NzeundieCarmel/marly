@@ -181,6 +181,29 @@ Verifier "Caisse : vente apres cloture refusee" 409 (Appeler Post "$k/ventes" $j
 Verifier "Isolation : caisse d'une autre entreprise" 404 (Appeler Get "$k/session" $autre.jeton)
 Verifier "Isolation : ticket d'une autre entreprise" 404 (Appeler Get "$k/ventes/$($t.id)" $autre.jeton)
 
+# Bloc 4a : factures liees aux articles
+Appeler Put "/facturation/profil" $j @{ niu = "M123456789012Q"; adresse = "Akwa, Douala"; telephone = "+237 699 00 00 00" } | Out-Null
+Appeler Post "/facturation/clients" $j @{ nom = "Chantier Test" } | Out-Null
+$client = $script:resultat.id
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+$stockAvant = $script:resultat.quantite
+Verifier "Facture : brouillon avec article" "ok" (Appeler Post "/facturation/factures" $j @{ clientId = $client; lignes = @(@{ designation = "Ciment 50 kg"; quantite = 3; prixUnitaire = 5031; articleId = $art.id }) })
+$fa = $script:resultat
+Verifier "Facture : article garde sur la ligne" $art.id $fa.lignes[0].articleId
+Verifier "Facture : quantite decimale sur article suivi refusee" 400 (Appeler Post "/facturation/factures" $j @{ clientId = $client; lignes = @(@{ designation = "Ciment"; quantite = 1.5; prixUnitaire = 5031; articleId = $art.id }) })
+Verifier "Facture : article inconnu refuse" 404 (Appeler Post "/facturation/factures" $j @{ clientId = $client; lignes = @(@{ designation = "X"; quantite = 1; prixUnitaire = 10; articleId = "inconnu" }) })
+Verifier "Facture : emission avec article" "ok" (Appeler Post "/facturation/factures/$($fa.id)/emettre" $j)
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Facture : stock sorti a l'emission" "$($stockAvant - 3)/FACTURE" "$($script:resultat.quantite)/$($script:resultat.mouvements[0].origine)"
+Appeler Post "/facturation/factures" $j @{ clientId = $client; lignes = @(@{ designation = "Ciment 50 kg"; quantite = 500; prixUnitaire = 5031; articleId = $art.id }) } | Out-Null
+$fb = $script:resultat
+Verifier "Facture : emission refusee si stock insuffisant" 409 (Appeler Post "/facturation/factures/$($fb.id)/emettre" $j)
+Appeler Get "/facturation/factures/$($fb.id)" $j | Out-Null
+Verifier "Facture : reste en brouillon, sans numero" "BROUILLON/" "$($script:resultat.statut)/$($script:resultat.numero)"
+Verifier "Facture : avoir" "ok" (Appeler Post "/facturation/factures/$($fa.id)/avoir" $j)
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Facture : stock rendu par l'avoir" "$stockAvant/AVOIR" "$($script:resultat.quantite)/$($script:resultat.mouvements[0].origine)"
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }

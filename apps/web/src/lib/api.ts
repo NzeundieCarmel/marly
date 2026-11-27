@@ -363,7 +363,7 @@ export interface FactureDetail extends FactureResume {
   totalHt: number;
   totalTva: number;
   retenue: number;
-  lignes: { designation: string; detail: string | null; quantite: number; prixUnitaire: number; totalHt: number }[];
+  lignes: { articleId?: string | null; designation: string; detail: string | null; quantite: number; prixUnitaire: number; totalHt: number }[];
   factureOrigine: { id: string; numero: string | null } | null;
   avoir: { id: string; numero: string | null } | null;
   jetonPartage: string | null;

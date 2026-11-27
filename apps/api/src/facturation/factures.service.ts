@@ -5,10 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TypeMouvementStock } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import type { ChargeJeton } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StockService } from '../stock/stock.service';
 import { FactureDto } from './dto/facture.dto';
 import { FacturationService } from './facturation.service';
 
@@ -47,6 +48,7 @@ export interface FactureDetail extends FactureResume {
   retenue: number;
   emetteur: Prisma.JsonValue;
   lignes: {
+    articleId?: string | null;
     designation: string;
     detail: string | null;
     quantite: number;
@@ -173,6 +175,7 @@ function versDetail(f: FactureComplete): FactureDetail {
     netAPayer: f.netAPayer,
     emetteur: f.emetteur,
     lignes: f.lignes.map((l) => ({
+      articleId: l.articleId,
       designation: l.designation,
       detail: l.detail,
       quantite: l.quantite.toNumber(),
@@ -191,6 +194,7 @@ export class FacturesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly facturation: FacturationService,
+    private readonly stock: StockService,
   ) {}
 
   private dossierDe(utilisateur: ChargeJeton): string {
@@ -271,6 +275,38 @@ export class FacturesService {
       );
     }
 
+    // Les articles cites appartiennent a l'entreprise ; un article suivi en stock se compte en unites entieres
+    const idsArticles = [
+      ...new Set(
+        dto.lignes
+          .map((l) => l.articleId)
+          .filter((a): a is string => Boolean(a)),
+      ),
+    ];
+    if (idsArticles.length > 0) {
+      const articles = await this.prisma.article.findMany({
+        where: { id: { in: idsArticles }, dossierId, actif: true },
+        select: { id: true, suiviStock: true },
+      });
+      if (articles.length !== idsArticles.length) {
+        throw new NotFoundException('Article introuvable');
+      }
+      const suivis = new Set(
+        articles.filter((a) => a.suiviStock).map((a) => a.id),
+      );
+      const decimale = dto.lignes.some(
+        (l) =>
+          l.articleId &&
+          suivis.has(l.articleId) &&
+          !Number.isInteger(l.quantite),
+      );
+      if (decimale) {
+        throw new BadRequestException(
+          'Un article suivi en stock se facture en quantité entière',
+        );
+      }
+    }
+
     const tauxRetenue = dto.tauxRetenue ?? 0;
     const calcul = calculer(
       dto.lignes,
@@ -295,6 +331,7 @@ export class FacturesService {
         ordre: i + 1,
         designation: l.designation,
         detail: l.detail || null,
+        articleId: l.articleId || null,
         quantite: new Prisma.Decimal(l.quantite),
         prixUnitaire: l.prixUnitaire,
         totalHt: calcul.totaux[i],
@@ -459,6 +496,40 @@ export class FacturesService {
           factureId: id,
         },
       });
+
+      // Les articles suivis en stock sortent au cout moyen pondere, dans la meme transaction
+      for (const l of f.lignes) {
+        if (!l.articleId) continue;
+        const article = await tx.article.findFirst({
+          where: { id: l.articleId, dossierId },
+          select: { suiviStock: true, nom: true },
+        });
+        if (!article?.suiviStock) continue;
+        const quantite = l.quantite.toNumber();
+        if (!Number.isInteger(quantite)) {
+          throw new BadRequestException(
+            `La quantité de ${article.nom} doit être un nombre entier`,
+          );
+        }
+        try {
+          await this.stock.mouvementer(tx, l.articleId, {
+            type: TypeMouvementStock.SORTIE,
+            quantite,
+            date: jourEnDate(jour),
+            motif: `Facture ${numero}`,
+            origine: 'FACTURE',
+            origineId: id,
+            creeParId: utilisateur.sub,
+          });
+        } catch (erreur) {
+          if (erreur instanceof ConflictException) {
+            throw new ConflictException(
+              `Stock insuffisant pour ${article.nom}`,
+            );
+          }
+          throw erreur;
+        }
+      }
     });
     return this.lire(utilisateur, id);
   }
@@ -543,6 +614,29 @@ export class FacturesService {
           factureId: avoir.id,
         },
       });
+
+      // Les articles sortis par la facture reviennent en stock, a leur cout de sortie
+      const sorties = await tx.mouvementStock.findMany({
+        where: { origine: 'FACTURE', origineId: f.id },
+        select: { articleId: true, quantite: true, coutUnitaire: true },
+      });
+      for (const s of sorties) {
+        const article = await tx.article.findUnique({
+          where: { id: s.articleId },
+          select: { suiviStock: true },
+        });
+        if (!article?.suiviStock) continue;
+        await this.stock.mouvementer(tx, s.articleId, {
+          type: TypeMouvementStock.ENTREE,
+          quantite: -s.quantite,
+          coutUnitaire: s.coutUnitaire,
+          date: jourEnDate(jour),
+          motif: `Avoir ${numero}`,
+          origine: 'AVOIR',
+          origineId: avoir.id,
+          creeParId: utilisateur.sub,
+        });
+      }
       return avoir.id;
     });
     return this.lire(utilisateur, avoirId);
@@ -598,7 +692,13 @@ export class FacturesService {
       netAPayer: d.netAPayer,
       client: d.clientDetail,
       emetteur: d.emetteur,
-      lignes: d.lignes,
+      lignes: d.lignes.map((l) => ({
+        designation: l.designation,
+        detail: l.detail,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaire,
+        totalHt: l.totalHt,
+      })),
       factureOrigine: d.factureOrigine
         ? { numero: d.factureOrigine.numero }
         : null,

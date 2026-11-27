@@ -9,10 +9,22 @@ import { Message } from "./champs";
 
 interface LigneEdition {
   cle: number;
+  articleId: string;
   designation: string;
   detail: string;
   quantite: string;
   prix: string;
+}
+
+// Article du stock proposé sur une ligne de facture
+export interface ArticleChoix {
+  id: string;
+  nom: string;
+  prixVente: number;
+  tauxTva: number;
+  suiviStock: boolean;
+  quantite: number;
+  unite: string;
 }
 
 const ETAT_INITIAL: EtatAction = { erreur: null };
@@ -40,12 +52,14 @@ export function EditeurFacture({
   tauxTva,
   aujourdhui,
   facture,
+  articles = [],
 }: {
   clients: ClientFacture[];
   regime: Regime;
   tauxTva: number;
   aujourdhui: string;
   facture?: FactureDetail;
+  articles?: ArticleChoix[];
 }) {
   const [etat, action, enCours] = useActionState(enregistrerFacture, ETAT_INITIAL);
   const [clientId, setClientId] = useState(facture?.clientId ?? clients[0]?.id ?? "");
@@ -56,17 +70,20 @@ export function EditeurFacture({
     facture && facture.lignes.length > 0
       ? facture.lignes.map((l, i) => ({
           cle: i,
+          articleId: l.articleId ?? "",
           designation: l.designation,
           detail: l.detail ?? "",
           quantite: String(l.quantite).replace(".", ","),
           prix: String(l.prixUnitaire),
         }))
-      : [{ cle: 0, designation: "", detail: "", quantite: "1", prix: "" }],
+      : [{ cle: 0, articleId: "", designation: "", detail: "", quantite: "1", prix: "" }],
   );
+  const parId = new Map(articles.map((a) => [a.id, a]));
 
   const saisies = lignes.map((l) => ({ quantite: enNombre(l.quantite), prixUnitaire: Math.round(enNombre(l.prix)) }));
   const calcul = calculerFacture(saisies, regime, tauxTva, enNombre(retenue));
   const envoi = lignes.map((l, i) => ({
+    articleId: l.articleId || undefined,
     designation: l.designation.trim(),
     detail: l.detail.trim() || undefined,
     quantite: saisies[i].quantite,
@@ -77,8 +94,21 @@ export function EditeurFacture({
     setLignes((liste) => liste.map((l) => (l.cle === cle ? { ...l, [champ]: valeur } : l)));
   }
 
+  // Choisir un article reprend son nom et son prix ; au réel, le prix affiché TTC est ramené hors taxes
+  function choisirArticle(cle: number, articleId: string) {
+    const a = parId.get(articleId);
+    setLignes((liste) =>
+      liste.map((l) => {
+        if (l.cle !== cle) return l;
+        if (!a) return { ...l, articleId: "" };
+        const prix = regime === "REEL" ? Math.round((a.prixVente * 10000) / (10000 + a.tauxTva)) : a.prixVente;
+        return { ...l, articleId: a.id, designation: a.nom, prix: String(prix) };
+      }),
+    );
+  }
+
   function ajouter() {
-    setLignes((liste) => [...liste, { cle: compteur, designation: "", detail: "", quantite: "1", prix: "" }]);
+    setLignes((liste) => [...liste, { cle: compteur, articleId: "", designation: "", detail: "", quantite: "1", prix: "" }]);
     setCompteur((n) => n + 1);
   }
 
@@ -119,41 +149,66 @@ export function EditeurFacture({
         </div>
       </div>
 
-      {lignes.map((l, i) => (
-        <fieldset key={l.cle} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
-          <legend className="sr-only">Ligne {i + 1}</legend>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-bold text-heading">Ligne {i + 1}</span>
-            {lignes.length > 1 && (
-              <button type="button" onClick={() => setLignes((liste) => liste.filter((x) => x.cle !== l.cle))} className="h-9 rounded-lg px-2.5 text-sm font-medium text-danger-ink underline">
-                Retirer
-              </button>
+      {lignes.map((l, i) => {
+        const article = l.articleId ? parId.get(l.articleId) : undefined;
+        const quantite = enNombre(l.quantite);
+        return (
+          <fieldset key={l.cle} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+            <legend className="sr-only">Ligne {i + 1}</legend>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-heading">Ligne {i + 1}</span>
+              {lignes.length > 1 && (
+                <button type="button" onClick={() => setLignes((liste) => liste.filter((x) => x.cle !== l.cle))} className="h-9 rounded-lg px-2.5 text-sm font-medium text-danger-ink underline">
+                  Retirer
+                </button>
+              )}
+            </div>
+            {articles.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`article-${l.cle}`} className={LIBELLE}>Article du stock (facultatif)</label>
+                <select id={`article-${l.cle}`} value={l.articleId} onChange={(e) => choisirArticle(l.cle, e.target.value)} className={CHAMP}>
+                  <option value="">Saisie libre</option>
+                  {articles.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.nom}
+                      {a.suiviStock ? ` · ${NOMBRE.format(a.quantite)} ${a.unite} en stock` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={`designation-${l.cle}`} className={LIBELLE}>Désignation</label>
-            <input id={`designation-${l.cle}`} required maxLength={200} value={l.designation} onChange={(e) => changer(l.cle, "designation", e.target.value)} placeholder="Produit ou service" className={CHAMP} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={`detail-${l.cle}`} className={LIBELLE}>Précision (facultatif)</label>
-            <input id={`detail-${l.cle}`} maxLength={200} value={l.detail} onChange={(e) => changer(l.cle, "detail", e.target.value)} className={CHAMP} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`quantite-${l.cle}`} className={LIBELLE}>Quantité</label>
-              <input id={`quantite-${l.cle}`} required inputMode="decimal" value={l.quantite} onChange={(e) => changer(l.cle, "quantite", e.target.value)} className={`${CHAMP} tabular-nums`} />
+              <label htmlFor={`designation-${l.cle}`} className={LIBELLE}>Désignation</label>
+              <input id={`designation-${l.cle}`} required maxLength={200} value={l.designation} onChange={(e) => changer(l.cle, "designation", e.target.value)} placeholder="Produit ou service" className={CHAMP} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`prix-${l.cle}`} className={LIBELLE}>{regime === "REEL" ? "Prix unitaire HT" : "Prix unitaire"}</label>
-              <input id={`prix-${l.cle}`} required inputMode="numeric" value={l.prix} onChange={(e) => changer(l.cle, "prix", e.target.value)} placeholder="FCFA" className={`${CHAMP} tabular-nums`} />
+              <label htmlFor={`detail-${l.cle}`} className={LIBELLE}>Précision (facultatif)</label>
+              <input id={`detail-${l.cle}`} maxLength={200} value={l.detail} onChange={(e) => changer(l.cle, "detail", e.target.value)} className={CHAMP} />
             </div>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted">Total de la ligne</span>
-            <strong className="tabular-nums">{NOMBRE.format(calcul.totaux[i])} FCFA</strong>
-          </div>
-        </fieldset>
-      ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`quantite-${l.cle}`} className={LIBELLE}>Quantité</label>
+                <input id={`quantite-${l.cle}`} required inputMode={article?.suiviStock ? "numeric" : "decimal"} value={l.quantite} onChange={(e) => changer(l.cle, "quantite", e.target.value)} className={`${CHAMP} tabular-nums`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`prix-${l.cle}`} className={LIBELLE}>{regime === "REEL" ? "Prix unitaire HT" : "Prix unitaire"}</label>
+                <input id={`prix-${l.cle}`} required inputMode="numeric" value={l.prix} onChange={(e) => changer(l.cle, "prix", e.target.value)} placeholder="FCFA" className={`${CHAMP} tabular-nums`} />
+              </div>
+            </div>
+            {article?.suiviStock && (
+              <p className={`text-[13px] ${quantite > article.quantite ? "text-danger-ink" : "text-muted"}`}>
+                {quantite > article.quantite
+                  ? `Stock insuffisant : ${NOMBRE.format(article.quantite)} ${article.unite} disponible(s).`
+                  : `Sortira du stock à l'émission (${NOMBRE.format(article.quantite)} ${article.unite} disponibles).`}
+              </p>
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Total de la ligne</span>
+              <strong className="tabular-nums">{NOMBRE.format(calcul.totaux[i])} FCFA</strong>
+            </div>
+          </fieldset>
+        );
+      })}
 
       <button type="button" onClick={ajouter} className="h-11 rounded-xl border border-dashed border-line-strong text-[15px] font-medium text-ink hover:bg-survol">
         Ajouter une ligne

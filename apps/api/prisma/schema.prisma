@@ -317,6 +317,8 @@ model LigneFacture {
   quantite     Decimal @db.Decimal(12, 3)
   prixUnitaire Int
   totalHt      Int
+  // Article du stock facture sur cette ligne (facultatif)
+  articleId    String?
 
   @@index([factureId])
 }

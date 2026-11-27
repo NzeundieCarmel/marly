@@ -33,6 +33,11 @@ export class LigneFactureDto {
   @MaxLength(200)
   detail?: string;
 
+  @IsOptional()
+  @IsString()
+  @Length(1, 40)
+  articleId?: string;
+
   @Type(() => Number)
   @IsNumber(
     { maxDecimalPlaces: 3 },

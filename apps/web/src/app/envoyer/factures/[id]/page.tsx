@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { lireFacture, lireProfil, lireProfilEmetteur, listerClientsFacture, type FactureDetail } from "@/lib/api";
+import { lireFacture, lireProfil, lireProfilEmetteur, listerArticles, listerClientsFacture, type FactureDetail } from "@/lib/api";
 import { jourDouala } from "@/lib/calcul-facture";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { IconeRetour } from "@/components/icones";
@@ -32,6 +32,7 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
   if (!profil.dossier) {
     redirect("/dossiers");
   }
+  const articles = facture.statut === "BROUILLON" ? await listerArticles(profil.dossier.id) : [];
   await connection();
   const s = statut(facture);
   const titre = facture.numero ?? "Brouillon de facture";
@@ -93,6 +94,15 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
             tauxTva={emetteur.tauxTva}
             aujourdhui={jourDouala(new Date())}
             facture={facture}
+            articles={articles.map((a) => ({
+              id: a.id,
+              nom: a.nom,
+              prixVente: a.prixVente,
+              tauxTva: a.tauxTva,
+              suiviStock: a.suiviStock,
+              quantite: a.quantite,
+              unite: a.unite,
+            }))}
           />
           <ActionsBrouillon id={facture.id} manquants={emetteur.manquants} />
         </>

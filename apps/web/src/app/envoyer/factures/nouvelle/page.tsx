@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { lireProfil, lireProfilEmetteur, listerClientsFacture } from "@/lib/api";
+import { lireProfil, lireProfilEmetteur, listerArticles, listerClientsFacture } from "@/lib/api";
 import { jourDouala } from "@/lib/calcul-facture";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { IconeRetour } from "@/components/icones";
@@ -13,6 +13,7 @@ async function ContenuNouvelle() {
   if (!profil.dossier) {
     redirect("/dossiers");
   }
+  const articles = await listerArticles(profil.dossier.id);
   await connection();
   const aujourdhui = jourDouala(new Date());
 
@@ -24,7 +25,21 @@ async function ContenuNouvelle() {
         </Link>
         <h1 className="text-xl font-bold text-heading">Nouvelle facture</h1>
       </div>
-      <EditeurFacture clients={clients} regime={emetteur.regime} tauxTva={emetteur.tauxTva} aujourdhui={aujourdhui} />
+      <EditeurFacture
+        clients={clients}
+        regime={emetteur.regime}
+        tauxTva={emetteur.tauxTva}
+        aujourdhui={aujourdhui}
+        articles={articles.map((a) => ({
+          id: a.id,
+          nom: a.nom,
+          prixVente: a.prixVente,
+          tauxTva: a.tauxTva,
+          suiviStock: a.suiviStock,
+          quantite: a.quantite,
+          unite: a.unite,
+        }))}
+      />
     </CadreTelephone>
   );
 }
