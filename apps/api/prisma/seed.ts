@@ -110,7 +110,39 @@ async function main(): Promise<void> {
     ],
   });
 
-  console.log('Donnees de demo creees : 3 comptes, 5 dossiers, 16 pieces, 4 demandes.');
+  // PME sans comptable : même structure que l'inscription autonome
+  // (inscription.service.ts › inscrireEntreprise) : un espace autonome, son dossier, son gérant
+  const espaceAutonome = await prisma.cabinet.create({
+    data: { nom: 'Restaurant Chez Mama Ngono', autonome: true, ville: 'Douala' },
+  });
+  const dossierAutonome = await prisma.dossier.create({
+    data: {
+      raisonSociale: 'Restaurant Chez Mama Ngono',
+      regime: Regime.IGS,
+      cabinetId: espaceAutonome.id,
+    },
+  });
+  await prisma.utilisateur.create({
+    data: {
+      nom: 'Hélène Ngono',
+      email: 'ngono@exemple.cm',
+      motDePasseHache,
+      role: Role.PME,
+      cabinetId: espaceAutonome.id,
+      dossierId: dossierAutonome.id,
+    },
+  });
+  await prisma.piece.createMany({
+    data: [
+      { date: '2026-11-04', montantTtc: 42500, fournisseur: 'Marché Sandaga', categorie: 'Achats', statut: StatutPiece.RECUE },
+      { date: '2026-11-03', montantTtc: 18000, fournisseur: 'ENEO', categorie: 'Électricité, eau', statut: StatutPiece.RECUE },
+      { date: '2026-11-01', montantTtc: 6500, fournisseur: 'Tradex', categorie: 'Autre', statut: StatutPiece.A_COMPLETER },
+    ].map((p) => ({ ...p, date: new Date(p.date), dossierId: dossierAutonome.id })),
+  });
+
+  console.log(
+    'Donnees de demo creees : 4 comptes (dont 1 PME sans comptable), 6 dossiers, 19 pieces, 4 demandes.',
+  );
 }
 
 main()

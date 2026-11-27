@@ -151,6 +151,36 @@ Verifier "Isolation : fiche d'article d'une autre entreprise" 404 (Appeler Get $
 Verifier "Isolation : article vu depuis un autre dossier" 404 (Appeler Get "/dossiers/$($autre.dossier)/stock/articles/$($art.id)" $autre.jeton)
 Verifier "Isolation : mouvement chez une autre entreprise" 404 (Appeler Post "$a/mouvements" $autre.jeton @{ type = "SORTIE"; quantite = 1 })
 
+# Bloc 3 : la caisse
+$k = "/dossiers/$($e.dossier)/caisse"
+$panier = @{ mode = "ESPECES"; montantRecu = 20000; lignes = @(@{ articleId = $art.id; quantite = 2 }, @{ articleId = $service.id; quantite = 1 }) }
+Verifier "Caisse : vente sans caisse ouverte refusee" 409 (Appeler Post "$k/ventes" $j $panier)
+Verifier "Caisse : ouverture, fond de 50000" "ok" (Appeler Post "$k/session/ouverture" $j @{ fondInitial = 50000 })
+Verifier "Caisse : double ouverture refusee" 409 (Appeler Post "$k/session/ouverture" $j @{ fondInitial = 0 })
+Verifier "Caisse : ticket encaisse" "ok" (Appeler Post "$k/ventes" $j $panier)
+$t = $script:resultat
+Verifier "Caisse : ticket 1, HT/TVA/TTC/monnaie" "1/11740/2260/14000/6000" "$($t.numero)/$($t.totalHt)/$($t.totalTva)/$($t.totalTtc)/$($t.monnaie)"
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Caisse : stock sorti par la vente" "15/VENTE" "$($script:resultat.quantite)/$($script:resultat.mouvements[0].origine)"
+Verifier "Caisse : montant recu insuffisant refuse" 400 (Appeler Post "$k/ventes" $j @{ mode = "ESPECES"; montantRecu = 1000; lignes = @(@{ articleId = $art.id; quantite = 1 }) })
+Verifier "Caisse : stock insuffisant refuse" 409 (Appeler Post "$k/ventes" $j @{ mode = "ESPECES"; lignes = @(@{ articleId = $art.id; quantite = 16 }) })
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Caisse : vente refusee, stock intact" 15 $script:resultat.quantite
+Verifier "Caisse : vente MTN MoMo" "ok" (Appeler Post "$k/ventes" $j @{ mode = "MTN_MOMO"; lignes = @(@{ articleId = $art.id; quantite = 1 }) })
+Verifier "Caisse : ticket 2" 2 $script:resultat.numero
+Verifier "Caisse : article inconnu refuse" 404 (Appeler Post "$k/ventes" $j @{ mode = "ESPECES"; lignes = @(@{ articleId = "inconnu"; quantite = 1 }) })
+Appeler Get "$c/journal?journal=MM" $j | Out-Null
+$vm = @(@($script:resultat) | Where-Object { $_.origine -eq "CAISSE" })
+Verifier "Caisse : ecriture Mobile Money au grand livre" "1/552/6000" "$($vm.Count)/$($vm[0].mouvements[0].compte)/$($vm[0].mouvements[0].debit)"
+Appeler Get "$k/session" $j | Out-Null
+$b = $script:resultat.session
+Verifier "Caisse : bilan (ventes/total/especes attendues)" "2/20000/64000" "$($b.ventes)/$($b.totalTtc)/$($b.especesAttendues)"
+Verifier "Caisse : cloture" "ok" (Appeler Post "$k/session/cloture" $j @{ especesComptees = 63000 })
+Verifier "Caisse : ecart de caisse" "64000/-1000" "$($script:resultat.especesAttendues)/$($script:resultat.ecart)"
+Verifier "Caisse : vente apres cloture refusee" 409 (Appeler Post "$k/ventes" $j $panier)
+Verifier "Isolation : caisse d'une autre entreprise" 404 (Appeler Get "$k/session" $autre.jeton)
+Verifier "Isolation : ticket d'une autre entreprise" 404 (Appeler Get "$k/ventes/$($t.id)" $autre.jeton)
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }

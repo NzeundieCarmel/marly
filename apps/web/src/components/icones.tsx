@@ -220,3 +220,12 @@ export function IconeStock(props: Props) {
     </Trait>
   );
 }
+export function IconeCaisse(props: Props) {
+  return (
+    <Trait {...props}>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M7 7V4h10v3" />
+      <path d="M7 12h4M7 16h2M15 12h2M15 16h2" />
+    </Trait>
+  );
+}

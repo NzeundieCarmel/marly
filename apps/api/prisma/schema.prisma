@@ -115,6 +115,7 @@ model Dossier {
   ecritures         EcritureComptable[]
   comptesPerso      CompteDossier[]
   articles          Article[]
+  sessionsCaisse    SessionCaisse[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -516,4 +517,75 @@ model MouvementStock {
 
   @@index([articleId, date])
   @@index([dossierId, date])
+}
+enum ModeCaisse {
+  ESPECES
+  MTN_MOMO
+  ORANGE_MONEY
+}
+
+// Une journee de caisse : du fond de caisse au comptage de fin
+model SessionCaisse {
+  id              String        @id @default(cuid())
+  dossier         Dossier       @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId       String
+  fondInitial     Int
+  ouverteLe       DateTime      @default(now())
+  ouverteParId    String
+  fermeeLe        DateTime?
+  fermeeParId     String?
+  especesComptees Int?
+  ecart           Int?
+  ventes          VenteCaisse[]
+
+  @@index([dossierId, fermeeLe])
+}
+
+// Un ticket de caisse, numerote par entreprise et par annee
+model VenteCaisse {
+  id          String             @id @default(cuid())
+  dossierId   String
+  session     SessionCaisse      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId   String
+  annee       Int
+  numero      Int
+  date        DateTime
+  totalHt     Int
+  totalTva    Int
+  totalTtc    Int
+  mode        ModeCaisse
+  montantRecu Int?
+  monnaie     Int?
+  creeParId   String
+  creeLe      DateTime           @default(now())
+  lignes      LigneVenteCaisse[]
+
+  @@unique([dossierId, annee, numero])
+  @@index([sessionId])
+}
+
+model LigneVenteCaisse {
+  id           String      @id @default(cuid())
+  vente        VenteCaisse @relation(fields: [venteId], references: [id], onDelete: Cascade)
+  venteId      String
+  ordre        Int
+  articleId    String
+  nom          String
+  quantite     Int
+  prixUnitaire Int
+  tauxTva      Int
+  totalHt      Int
+  tva          Int
+  totalTtc     Int
+
+  @@index([venteId])
+  @@index([articleId])
+}
+
+model CompteurTicket {
+  dossierId String
+  annee     Int
+  dernier   Int
+
+  @@id([dossierId, annee])
 }

@@ -624,3 +624,53 @@ export function lireArticle(dossierId: string, id: string): Promise<FicheArticle
 export function lireResumeStock(dossierId: string): Promise<ResumeStock> {
   return appelerApi<ResumeStock>(cheminStock(dossierId, "resume"));
 }
+// Caisse : sessions (journée de caisse) et tickets
+export type ModeCaisse = "ESPECES" | "MTN_MOMO" | "ORANGE_MONEY";
+
+export interface SessionCaisse {
+  id: string;
+  ouverteLe: string;
+  fondInitial: number;
+  ventes: number;
+  totalTtc: number;
+  parMode: Record<ModeCaisse, number>;
+  especesAttendues: number;
+}
+
+export interface VenteCaisseResume {
+  id: string;
+  numero: number;
+  date: string;
+  totalTtc: number;
+  mode: ModeCaisse;
+}
+
+export interface TicketCaisse {
+  id: string;
+  numero: number;
+  annee: number;
+  date: string;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+  mode: ModeCaisse;
+  montantRecu: number | null;
+  monnaie: number | null;
+  lignes: { articleId: string; nom: string; quantite: number; prixUnitaire: number; tauxTva: number; totalTtc: number }[];
+}
+
+function cheminCaisse(dossierId: string, suite: string): string {
+  return `/dossiers/${encodeURIComponent(dossierId)}/caisse/${suite}`;
+}
+
+export function lireSessionCaisse(dossierId: string): Promise<{ session: SessionCaisse | null }> {
+  return appelerApi<{ session: SessionCaisse | null }>(cheminCaisse(dossierId, "session"));
+}
+
+export function listerVentesCaisse(dossierId: string): Promise<VenteCaisseResume[]> {
+  return appelerApi<VenteCaisseResume[]>(cheminCaisse(dossierId, "ventes"));
+}
+
+export function lireTicket(dossierId: string, id: string): Promise<TicketCaisse> {
+  return appelerApi<TicketCaisse>(cheminCaisse(dossierId, `ventes/${encodeURIComponent(id)}`));
+}

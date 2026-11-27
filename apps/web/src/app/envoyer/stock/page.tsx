@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { lireProfil, lireResumeStock, listerArticles } from "@/lib/api";
 import { formatMontant } from "@/lib/format";
 import { CadreTelephone } from "@/components/cadre-telephone";
-import { IconeStock } from "@/components/icones";
+import { IconeCaisse, IconeStock } from "@/components/icones";
 import { PastilleStock, Quantite } from "./affichage";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
@@ -42,6 +42,14 @@ async function ContenuStock({ recherche }: { recherche: Recherche }) {
           Nouvel article
         </Link>
       </div>
+
+      <Link
+        href="/envoyer/caisse"
+        className="flex h-12 items-center justify-center gap-2 rounded-xl border border-line-strong bg-surface text-[15px] font-bold text-ink hover:bg-survol"
+      >
+        <IconeCaisse width={20} height={20} />
+        Caisse : vendre au comptoir
+      </Link>
 
       <section aria-label="Résumé du stock" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-col gap-0.5">
