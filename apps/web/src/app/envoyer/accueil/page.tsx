@@ -54,13 +54,13 @@ async function ContenuAccueil() {
   const ventesJour = p.ventesJour.caisse + p.ventesJour.factures;
 
   return (
-    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="envoyer">
+    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="accueil" large>
       <div className="flex flex-col">
         <span className="text-sm capitalize text-muted">{date}</span>
         <h1 className="text-[26px] font-bold leading-8 text-heading">Bonjour {prenom}</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Chiffre
           libelle="Ventes du jour"
           valeur={ventesJour}
@@ -76,12 +76,17 @@ async function ContenuAccueil() {
         <Chiffre libelle="Fournisseurs : à payer" valeur={p.aPayer} note="Achats à crédit" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Action href="/envoyer/caisse" libelle={p.caisseOuverte ? "Vendre" : "Ouvrir la caisse"} Icone={IconeCaisse} principale />
         <Action href="/envoyer" libelle="Photo d'une pièce" Icone={IconeAppareil} />
         <Action href="/envoyer/factures/nouvelle" libelle="Nouvelle facture" Icone={IconeFacture} />
         <Action href="/envoyer/stock/achats/nouveau" libelle="Recevoir une livraison" Icone={IconeStock} />
       </div>
+      <Link href="/envoyer/pieces" className="-mt-2 self-start py-2 text-sm font-bold text-link underline">
+        Voir mes pièces envoyées
+      </Link>
+
+      <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
 
       {p.piecesAComptabiliser > 0 && (
         <section className="flex flex-col gap-2 rounded-2xl border border-warning-line bg-warning-bg p-4 text-warning-ink">
@@ -159,6 +164,7 @@ async function ContenuAccueil() {
           </ul>
         </section>
       )}
+      </div>
     </CadreTelephone>
   );
 }

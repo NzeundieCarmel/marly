@@ -22,7 +22,7 @@ async function ContenuAchat({ parametres, recherche }: { parametres: Promise<{ i
   const annule = achat.statut === "ANNULE";
 
   return (
-    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
+    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="achats">
       <EnTeteCompta titre={`Achat n°${achat.numero}`} retour="/envoyer/stock/achats" />
 
       {p.paye === "1" && (

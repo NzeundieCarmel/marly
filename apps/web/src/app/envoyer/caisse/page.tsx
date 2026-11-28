@@ -16,7 +16,7 @@ import { OuvrirCaisse, PointDeVente } from "./formulaires";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
-const MODES_LIBELLES: Record<ModeCaisse, string> = {
+export const MODES_LIBELLES: Record<ModeCaisse, string> = {
   ESPECES: "Espèces",
   MTN_MOMO: "MTN MoMo",
   ORANGE_MONEY: "Orange Money",
@@ -50,7 +50,7 @@ async function ContenuCaisse({ recherche }: { recherche: Recherche }) {
   if (!session) {
     const ecart = nombre(p.ecart);
     return (
-      <CadreTelephone nomDossier={dossier.raisonSociale} actif="stock">
+      <CadreTelephone nomDossier={dossier.raisonSociale} actif="caisse" large>
         <h1 className="text-[26px] font-bold leading-8 text-heading">Caisse</h1>
         {p.cloture === "1" && ecart !== null && (
           <section role="status" className={`flex flex-col gap-1 rounded-2xl p-4 ${ecart === 0 ? "bg-success-bg text-success-ink" : "bg-warning-bg text-warning-ink"}`}>
@@ -76,7 +76,7 @@ async function ContenuCaisse({ recherche }: { recherche: Recherche }) {
   ]);
 
   return (
-    <CadreTelephone nomDossier={dossier.raisonSociale} actif="stock">
+    <CadreTelephone nomDossier={dossier.raisonSociale} actif="caisse" large>
       <div className="flex flex-col">
         <h1 className="text-[26px] font-bold leading-8 text-heading">Caisse</h1>
         <p className="text-sm text-muted tabular-nums">

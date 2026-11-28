@@ -18,7 +18,7 @@ async function ContenuAchats() {
     .reduce((s, a) => s + a.totalTtc - a.montantRegle, 0);
 
   return (
-    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
+    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="achats">
       <EnTeteCompta titre="Achats" retour="/envoyer/stock" />
       <Link
         href="/envoyer/stock/achats/nouveau"

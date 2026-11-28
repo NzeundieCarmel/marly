@@ -17,7 +17,7 @@ async function ContenuNouvelAchat() {
   const fournisseurs = [...new Set(achats.map((a) => a.fournisseur))].slice(0, 50);
 
   return (
-    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
+    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="achats">
       <EnTeteCompta titre="Nouvel achat" retour="/envoyer/stock/achats" />
       <FormulaireAchat
         dossierId={profil.dossier.id}

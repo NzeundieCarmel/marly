@@ -17,7 +17,7 @@ async function ContenuCloture() {
   }
 
   return (
-    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
+    <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="caisse">
       <EnTeteCompta titre="Clôturer la caisse" retour="/envoyer/caisse" />
       <section className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-4">
         <dl className="flex flex-col divide-y divide-line text-[15px]">

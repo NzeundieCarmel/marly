@@ -110,7 +110,8 @@ export function PointDeVente({ dossierId, articles }: { dossierId: string; artic
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label className="sr-only" htmlFor="recherche-caisse">Rechercher un article</label>
         <input
@@ -143,7 +144,7 @@ export function PointDeVente({ dossierId, articles }: { dossierId: string; artic
           Aucun article. Ajoutez d&apos;abord vos articles dans l&apos;onglet Stock.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
           {visibles.map((a) => {
             const epuise = a.suiviStock && a.quantite - (panier[a.id] ?? 0) <= 0;
             return (
@@ -166,8 +167,9 @@ export function PointDeVente({ dossierId, articles }: { dossierId: string; artic
           })}
         </div>
       )}
+      </div>
 
-      <form action={action} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+      <form action={action} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 lg:sticky lg:top-20">
         <input type="hidden" name="dossierId" value={dossierId} />
         <input type="hidden" name="lignes" value={JSON.stringify(lignes.map((l) => ({ articleId: l.article.id, quantite: l.quantite })))} />
         <div className="flex items-baseline justify-between">

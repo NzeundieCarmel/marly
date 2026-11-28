@@ -229,3 +229,21 @@ export function IconeCaisse(props: Props) {
     </Trait>
   );
 }
+export function IconeAccueil(props: Props) {
+  return (
+    <Trait {...props}>
+      <path d="M3 11l9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+    </Trait>
+  );
+}
+
+export function IconeAchats(props: Props) {
+  return (
+    <Trait {...props}>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="18" cy="20" r="1.5" />
+      <path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L22 8H6" />
+    </Trait>
+  );
+}
