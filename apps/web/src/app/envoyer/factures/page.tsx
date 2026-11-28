@@ -93,6 +93,9 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
       <Link href="/envoyer/factures/nouvelle" className="flex h-[52px] items-center justify-center rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover">
         Nouvelle facture
       </Link>
+      <Link href="/envoyer/factures/devis" className="flex h-12 items-center justify-center rounded-xl border border-line-strong bg-surface text-[15px] font-bold text-ink hover:bg-survol">
+        Mes devis
+      </Link>
 
       {factures.length > 0 && (
         <ul aria-label="Vos factures" className="overflow-hidden rounded-2xl border border-line bg-surface">

@@ -704,3 +704,43 @@ export function listerAchats(dossierId: string): Promise<AchatResume[]> {
 export function lireAchat(dossierId: string, id: string): Promise<Achat> {
   return appelerApi<Achat>(`/dossiers/${encodeURIComponent(dossierId)}/achats/${encodeURIComponent(id)}`);
 }
+
+// Devis : proposés au client, puis transformés en brouillon de facture
+export type StatutDevis = "EN_COURS" | "ACCEPTE" | "REFUSE" | "TRANSFORME";
+
+export interface DevisResume {
+  id: string;
+  numero: string;
+  statut: StatutDevis;
+  client: string;
+  dateDevis: string;
+  totalTtc: number;
+  factureId: string | null;
+}
+
+export interface DevisDetail {
+  id: string;
+  numero: string;
+  statut: StatutDevis;
+  clientId: string;
+  client: ClientFacture;
+  dateDevis: string;
+  validiteJours: number;
+  finValidite: string;
+  note: string | null;
+  regime: Regime;
+  tauxTva: number;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+  factureId: string | null;
+  lignes: { articleId: string | null; designation: string; detail: string | null; quantite: number; prixUnitaire: number; totalHt: number }[];
+}
+
+export function listerDevis(): Promise<DevisResume[]> {
+  return appelerApi<DevisResume[]>("/facturation/devis");
+}
+
+export function lireDevis(id: string): Promise<DevisDetail> {
+  return appelerApi<DevisDetail>(`/facturation/devis/${encodeURIComponent(id)}`);
+}

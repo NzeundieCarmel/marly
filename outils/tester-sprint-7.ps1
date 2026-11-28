@@ -239,6 +239,23 @@ Verifier "Achat : double annulation refusee" 409 (Appeler Post "$h/$($achat.id)/
 Verifier "Isolation : achat d'une autre entreprise" 404 (Appeler Get "$h/$($achat.id)" $autre.jeton)
 Verifier "Isolation : achat chez une autre entreprise" 404 (Appeler Post $h $autre.jeton @{ fournisseur = "X Y"; date = $ceJour; avecTva = $false; paiement = "ESPECES"; lignes = @(@{ articleId = $art.id; quantite = 1; coutUnitaire = 10 }) })
 
+# Bloc 4c : devis
+$annee = (Get-Date).ToUniversalTime().AddHours(1).Year
+$ligneDevis = @(@{ designation = "Ciment 50 kg"; quantite = 2; prixUnitaire = 5031; articleId = $art.id })
+Verifier "Devis : cree" "ok" (Appeler Post "/facturation/devis" $j @{ clientId = $client; validiteJours = 15; lignes = $ligneDevis })
+$dv = $script:resultat
+Verifier "Devis : numero et totaux HT/TVA/TTC" "DEV-$annee-0001/10062/1937/11999" "$($dv.numero)/$($dv.totalHt)/$($dv.totalTva)/$($dv.totalTtc)"
+Verifier "Devis : client inconnu refuse" 404 (Appeler Post "/facturation/devis" $j @{ clientId = "inconnu"; lignes = $ligneDevis })
+Verifier "Devis : modification en cours" "ok" (Appeler Put "/facturation/devis/$($dv.id)" $j @{ clientId = $client; validiteJours = 30; lignes = @(@{ designation = "Ciment 50 kg"; quantite = 4; prixUnitaire = 5031; articleId = $art.id }) })
+Verifier "Devis : accepte" "ACCEPTE" (& { Appeler Post "/facturation/devis/$($dv.id)/statut" $j @{ statut = "ACCEPTE" } | Out-Null; $script:resultat.statut })
+Verifier "Devis : transforme en facture" "ok" (Appeler Post "/facturation/devis/$($dv.id)/facture" $j)
+$fd = $script:resultat.factureId
+Appeler Get "/facturation/factures/$fd" $j | Out-Null
+Verifier "Devis : brouillon de facture avec l'article" "BROUILLON/4/$($art.id)" "$($script:resultat.statut)/$($script:resultat.lignes[0].quantite)/$($script:resultat.lignes[0].articleId)"
+Verifier "Devis : seconde transformation refusee" 409 (Appeler Post "/facturation/devis/$($dv.id)/facture" $j)
+Verifier "Devis : modification apres facturation refusee" 409 (Appeler Put "/facturation/devis/$($dv.id)" $j @{ clientId = $client; lignes = $ligneDevis })
+Verifier "Isolation : devis d'une autre entreprise" 404 (Appeler Get "/facturation/devis/$($dv.id)" $autre.jeton)
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }
