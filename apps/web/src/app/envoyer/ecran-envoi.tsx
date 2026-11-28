@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useRouter } from "next/navigation";
 import { mettreEnAttente, synchroniser, type ResultatSynchro } from "@/lib/file-attente";
 import { compresserImage, formatTaille } from "@/lib/compresser-image";
+import { creerVenteLue } from "./actions-lecture";
 import {
   IconeAppareil,
   IconeCheck,
@@ -29,6 +30,33 @@ export interface DernierEnvoi {
 }
 
 type Message = { type: "succes" | "erreur"; texte: string } | null;
+
+type ChampLu = "montantTtc" | "montantHt" | "tva" | "date" | "tiers" | "niuTiers";
+
+// Ce que Marly a lu sur la photo (voir l'API : dossiers/:id/lecture)
+interface ResultatLecture {
+  nature: "ACHAT" | "VENTE";
+  montantTtc: number | null;
+  montantHt: number | null;
+  tva: number | null;
+  tvaCalculee: boolean;
+  date: string | null;
+  tiers: string | null;
+  niuTiers: string | null;
+  champsLus: ChampLu[];
+}
+
+type EtatLecture =
+  | { etat: "aucune" }
+  | { etat: "encours" }
+  | { etat: "faite"; lus: ChampLu[]; tvaCalculee: boolean }
+  | { etat: "echec"; texte: string };
+
+const CHAMP = "h-12 rounded-xl border bg-surface px-3 text-base";
+// Un champ que Marly n'a pas trouvé sur la photo est signalé en orange
+function bordure(lecture: EtatLecture, champ: ChampLu): string {
+  return lecture.etat === "faite" && !lecture.lus.includes(champ) ? "border-warning-line bg-warning-bg" : "border-line-strong";
+}
 
 // État du réseau, lu sans effet : le navigateur prévient à chaque changement
 function abonnerReseau(rappel: () => void) {
@@ -87,6 +115,7 @@ export function EcranEnvoi({
   dernier,
   autonome,
   resume,
+  clients,
 }: {
   dossierId: string;
   prenom: string;
@@ -96,6 +125,7 @@ export function EcranEnvoi({
   dernier: DernierEnvoi | null;
   autonome: boolean;
   resume?: React.ReactNode;
+  clients: { id: string; nom: string }[];
 }) {
   const router = useRouter();
   const urlApercu = useRef<string | null>(null);
@@ -114,6 +144,19 @@ export function EcranEnvoi({
   // Numéro de la dernière photo choisie : une compression plus ancienne qui finit en retard est ignorée
   const selection = useRef(0);
   const enOptimisation = optimisation !== null && optimisation.apres === null;
+
+  // Champs du formulaire, pré-remplis par la lecture automatique
+  const [date, setDate] = useState(aujourdhui());
+  const [montant, setMontant] = useState("");
+  const [fournisseur, setFournisseur] = useState("");
+  const [montantHt, setMontantHt] = useState("");
+  const [tva, setTva] = useState("");
+  const [niuTiers, setNiuTiers] = useState("");
+  const [nature, setNature] = useState<"ACHAT" | "VENTE">("ACHAT");
+  const [lecture, setLecture] = useState<EtatLecture>({ etat: "aucune" });
+  const [clientId, setClientId] = useState("");
+  const [nouveauClient, setNouveauClient] = useState("");
+  const [designation, setDesignation] = useState("Vente selon bon");
 
   const appliquerResultat = useCallback(
     (resultat: ResultatSynchro) => {
@@ -180,11 +223,57 @@ export function EcranEnvoi({
     setVue("formulaire");
 
     const numero = ++selection.current;
+    setLecture({ etat: "aucune" });
     void compresserImage(choisi).then((resultat) => {
       if (selection.current !== numero) return;
       setFichier(resultat);
       setOptimisation({ avant: choisi.size, apres: resultat.size });
+      // Lecture automatique : une photo, et du réseau ; sinon le gérant remplit à la main
+      if (choisi.type.startsWith("image/") && navigator.onLine) {
+        void lire(resultat, numero, demandeChoisie === undefined ? demande : demandeChoisie);
+      }
     });
+  }
+
+  async function lire(photo: File, numero: number, demandeEnCours: DemandeOuverte | null) {
+    setLecture({ etat: "encours" });
+    const donnees = new FormData();
+    donnees.set("dossierId", dossierId);
+    donnees.set("fichier", photo, photo.name);
+    let reponse: Response | null = null;
+    try {
+      reponse = await fetch("/api/lecture", { method: "POST", body: donnees });
+    } catch {
+      reponse = null;
+    }
+    if (selection.current !== numero) return;
+    if (!reponse || !reponse.ok) {
+      const corps = (await reponse?.json().catch(() => null)) as { message?: string | string[] } | null;
+      const texte = Array.isArray(corps?.message) ? corps.message[0] : corps?.message;
+      setLecture({ etat: "echec", texte: texte ?? "Lecture automatique indisponible : remplissez les champs à la main." });
+      return;
+    }
+    const r = (await reponse.json()) as ResultatLecture;
+    if (selection.current !== numero) return;
+    if (r.date) setDate(r.date);
+    setMontant(r.montantTtc !== null ? String(r.montantTtc) : "");
+    setMontantHt(r.montantHt !== null ? String(r.montantHt) : "");
+    setTva(r.tva !== null ? String(r.tva) : "");
+    setNiuTiers(r.niuTiers ?? "");
+    // Une pièce demandée par le cabinet reste un achat ; sinon on suit ce que Marly a reconnu
+    const natureLue = demandeEnCours ? "ACHAT" : r.nature;
+    setNature(natureLue);
+    if (natureLue === "VENTE") {
+      const tiers = (r.tiers ?? "").toLowerCase();
+      const trouve = tiers
+        ? clients.find((c) => c.nom.toLowerCase().includes(tiers) || tiers.includes(c.nom.toLowerCase()))
+        : undefined;
+      setClientId(trouve?.id ?? "");
+      setNouveauClient(trouve ? "" : (r.tiers ?? ""));
+    } else {
+      setFournisseur(r.tiers ?? "");
+    }
+    setLecture({ etat: "faite", lus: r.champsLus, tvaCalculee: r.tvaCalculee });
   }
 
   function revenir() {
@@ -195,12 +284,48 @@ export function EcranEnvoi({
     setDemande(null);
     setCategorie(CATEGORIES[0]);
     setOptimisation(null);
+    setDate(aujourdhui());
+    setMontant("");
+    setFournisseur("");
+    setMontantHt("");
+    setTva("");
+    setNiuTiers("");
+    setNature("ACHAT");
+    setLecture({ etat: "aucune" });
+    setClientId("");
+    setNouveauClient("");
+    setDesignation("Vente selon bon");
     selection.current += 1;
     setVue("accueil");
   }
 
+  // Vente lue sur la photo : un brouillon de facture, numéroté FAC-… seulement à l'émission
+  async function envoyerVente() {
+    if (!navigator.onLine) {
+      setMessage({ type: "erreur", texte: "Il faut du réseau pour créer une facture." });
+      return;
+    }
+    const donnees = new FormData();
+    donnees.set("clientId", clientId);
+    donnees.set("nouveauClient", nouveauClient);
+    donnees.set("designation", designation);
+    donnees.set("montantTtc", montant);
+    setMessage(null);
+    setEnvoiEnCours(true);
+    try {
+      const resultat = await creerVenteLue(donnees);
+      if (resultat?.erreur) setMessage({ type: "erreur", texte: resultat.erreur });
+    } finally {
+      setEnvoiEnCours(false);
+    }
+  }
+
   async function envoyer(evenement: React.FormEvent<HTMLFormElement>) {
     evenement.preventDefault();
+    if (nature === "VENTE") {
+      await envoyerVente();
+      return;
+    }
     if (!fichier) {
       setMessage({ type: "erreur", texte: "Prenez d'abord la pièce en photo." });
       return;
@@ -213,6 +338,11 @@ export function EcranEnvoi({
     donnees.set("categorie", categorie);
     donnees.set("fichier", fichier, fichier.name);
     if (demande) donnees.set("demandeId", demande.id);
+    // Champs facultatifs : envoyés seulement s'ils sont remplis
+    for (const champ of ["montantHt", "tva", "niuFournisseur"]) {
+      if (!String(donnees.get(champ) ?? "").trim()) donnees.delete(champ);
+    }
+    if (lecture.etat === "faite") donnees.set("lectureAuto", "oui");
 
     try {
       let reponse: Response | null = null;
@@ -340,23 +470,111 @@ export function EcranEnvoi({
           </p>
         )}
 
+        {lecture.etat === "encours" && (
+          <p role="status" className="rounded-xl bg-info-bg p-3 text-sm text-info-ink">
+            Marly lit la pièce… Vous pouvez déjà vérifier la photo.
+          </p>
+        )}
+        {lecture.etat === "faite" && (
+          <p role="status" className="rounded-xl bg-success-bg p-3 text-sm leading-5 text-success-ink">
+            Marly a lu la pièce. Vérifiez les champs, puis enregistrez.
+            {lecture.lus.length < 4 && " Les champs en orange n'ont pas été trouvés sur la photo."}
+            {lecture.tvaCalculee && " La TVA a été calculée à partir des montants lus."}
+          </p>
+        )}
+        {lecture.etat === "echec" && (
+          <p role="status" className="rounded-xl bg-warning-bg p-3 text-sm text-warning-ink">{lecture.texte}</p>
+        )}
+
+        {!demande && (
+          <fieldset className="grid grid-cols-2 gap-2">
+            <legend className="mb-2 text-sm font-medium text-muted">Cette pièce est</legend>
+            {(
+              [
+                ["ACHAT", "Un achat, une dépense"],
+                ["VENTE", "Une vente à facturer"],
+              ] as const
+            ).map(([valeur, libelle]) => (
+              <button
+                key={valeur}
+                type="button"
+                aria-pressed={nature === valeur}
+                onClick={() => setNature(valeur)}
+                className={
+                  nature === valeur
+                    ? "h-12 rounded-xl border border-action bg-action px-2 text-sm font-bold text-white"
+                    : "h-12 rounded-xl border border-line-strong bg-surface px-2 text-sm text-ink"
+                }
+              >
+                {libelle}
+              </button>
+            ))}
+          </fieldset>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="date" className="text-sm font-medium text-muted">Date</label>
-            <input id="date" name="date" type="date" required defaultValue={aujourdhui()} className="h-12 rounded-xl border border-line-strong bg-surface px-3 text-base" />
+            <input id="date" name="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={`${CHAMP} ${bordure(lecture, "date")}`} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="montantTtc" className="text-sm font-medium text-muted">Montant (FCFA)</label>
-            <input id="montantTtc" name="montantTtc" type="text" inputMode="numeric" pattern="[0-9]*" required className="h-12 rounded-xl border border-line-strong bg-surface px-3 text-base tabular-nums" />
+            <label htmlFor="montantTtc" className="text-sm font-medium text-muted">Montant TTC (FCFA)</label>
+            <input id="montantTtc" name="montantTtc" type="text" inputMode="numeric" pattern="[0-9]*" required value={montant} onChange={(e) => setMontant(e.target.value)} className={`${CHAMP} tabular-nums ${bordure(lecture, "montantTtc")}`} />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="fournisseur" className="text-sm font-medium text-muted">Fournisseur (facultatif)</label>
-          <input id="fournisseur" name="fournisseur" type="text" maxLength={120} className="h-12 rounded-xl border border-line-strong bg-surface px-3 text-base" />
-        </div>
+        {nature === "VENTE" ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="clientId" className="text-sm font-medium text-muted">Client</label>
+              <select id="clientId" value={clientId} onChange={(e) => setClientId(e.target.value)} className={`${CHAMP} border-line-strong`}>
+                <option value="">Nouveau client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nom}</option>
+                ))}
+              </select>
+            </div>
+            {!clientId && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="nouveauClient" className="text-sm font-medium text-muted">Nom du nouveau client</label>
+                <input id="nouveauClient" type="text" required minLength={2} maxLength={120} value={nouveauClient} onChange={(e) => setNouveauClient(e.target.value)} className={`${CHAMP} ${bordure(lecture, "tiers")}`} />
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="designation" className="text-sm font-medium text-muted">Désignation sur la facture</label>
+              <input id="designation" type="text" required maxLength={200} value={designation} onChange={(e) => setDesignation(e.target.value)} className={`${CHAMP} border-line-strong`} />
+            </div>
+            <p className="text-[13px] leading-[19px] text-muted">
+              Marly prépare un brouillon de facture au montant lu. Vous pourrez détailler les lignes, puis l&apos;émettre : elle
+              recevra alors son numéro FAC-….
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="fournisseur" className="text-sm font-medium text-muted">Fournisseur (facultatif)</label>
+              <input id="fournisseur" name="fournisseur" type="text" maxLength={120} value={fournisseur} onChange={(e) => setFournisseur(e.target.value)} className={`${CHAMP} ${bordure(lecture, "tiers")}`} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="montantHt" className="text-sm font-medium text-muted">Montant HT (facultatif)</label>
+                <input id="montantHt" name="montantHt" type="text" inputMode="numeric" pattern="[0-9]*" value={montantHt} onChange={(e) => setMontantHt(e.target.value)} className={`${CHAMP} tabular-nums ${lecture.etat === "faite" && montantHt === "" ? "border-warning-line bg-warning-bg" : "border-line-strong"}`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="tva" className="text-sm font-medium text-muted">TVA (facultatif)</label>
+                <input id="tva" name="tva" type="text" inputMode="numeric" pattern="[0-9]*" value={tva} onChange={(e) => setTva(e.target.value)} className={`${CHAMP} tabular-nums ${lecture.etat === "faite" && tva === "" ? "border-warning-line bg-warning-bg" : "border-line-strong"}`} />
+              </div>
+            </div>
+            {niuTiers && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="niuFournisseur" className="text-sm font-medium text-muted">NIU du fournisseur</label>
+                <input id="niuFournisseur" name="niuFournisseur" type="text" maxLength={20} value={niuTiers} onChange={(e) => setNiuTiers(e.target.value)} className={`${CHAMP} border-line-strong uppercase`} />
+              </div>
+            )}
+          </>
+        )}
 
-        <fieldset className="flex flex-col gap-2">
+        <fieldset className={nature === "VENTE" ? "hidden" : "flex flex-col gap-2"}>
           <legend className="mb-2 text-sm font-medium text-muted">Catégorie</legend>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
@@ -379,12 +597,18 @@ export function EcranEnvoi({
 
         <button
           type="submit"
-          disabled={envoiEnCours || enOptimisation}
+          disabled={envoiEnCours || enOptimisation || lecture.etat === "encours"}
           className="mt-2 flex h-13 items-center justify-center gap-2.5 rounded-xl bg-action text-base font-bold text-white hover:bg-action-hover disabled:opacity-60"
         >
           <IconeEnvoyer width={20} height={20} />
            {enOptimisation
             ? "Optimisation de la photo…"
+            : lecture.etat === "encours"
+            ? "Lecture de la pièce…"
+            : nature === "VENTE"
+            ? envoiEnCours
+              ? "Création du brouillon…"
+              : "Créer le brouillon de facture"
             : envoiEnCours
             ? "Envoi en cours…"
             : !enLigne

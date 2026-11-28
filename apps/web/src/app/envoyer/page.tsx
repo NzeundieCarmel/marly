@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { lireProfil, listerDemandes, listerPieces, type StatutPiece } from "@/lib/api";
+import { lireProfil, listerClientsFacture, listerDemandes, listerPieces, type StatutPiece } from "@/lib/api";
 import { formatJourMois, joursAvant } from "@/lib/echeances";
 import { formatMontant, prenom } from "@/lib/format";
 import { resumerMois } from "@/lib/resume-mois";
@@ -33,7 +33,11 @@ async function ContenuEnvoi() {
     redirect("/dossiers");
   }
   const dossier = profil.dossier;
-  const [pieces, demandes] = await Promise.all([listerPieces(dossier.id), listerDemandes(dossier.id)]);
+  const [pieces, demandes, clients] = await Promise.all([
+    listerPieces(dossier.id),
+    listerDemandes(dossier.id),
+    listerClientsFacture(),
+  ]);
 
   const ouvertes = demandes.filter((d) => d.statut === "OUVERTE");
   await connection();
@@ -72,6 +76,7 @@ async function ContenuEnvoi() {
         echeanceTexte={echeanceTexte}
         dernier={dernier}
         autonome={profil.autonome}
+        clients={clients.map((c) => ({ id: c.id, nom: c.nom }))}
         resume={profil.autonome ? <CarteResumeMois resume={resumerMois(pieces, maintenant)} /> : null}
       />
     </CadreTelephone>

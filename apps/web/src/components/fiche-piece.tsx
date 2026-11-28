@@ -17,6 +17,11 @@ export interface DonneesFiche {
     statut: string;
     recueLe: string;
     empreinte: string | null;
+    numero?: string | null;
+    montantHt?: number | null;
+    tva?: number | null;
+    niuTiers?: string | null;
+    luAuto?: boolean;
   };
   srcFichier: string | null;
   ecriture: { journal: string; lignes: LigneEcriture[] } | null;
@@ -65,6 +70,7 @@ export function FichePiece({ donnees }: { donnees: DonneesFiche }) {
           </div>
           <div className="flex flex-col items-end gap-2 text-right">
             <h1 className={`text-[32px] font-bold leading-9 tracking-tight ${BLEU}`}>Fiche de pièce</h1>
+            {p.numero && <strong className={`text-[17px] tabular-nums ${BLEU}`}>N° {p.numero}</strong>}
             <strong className="text-[15px] tabular-nums">Réf. {reference}</strong>
             <span className="rounded-full bg-[#EEF1F5] px-2.5 py-1 text-xs font-bold text-[#4E5867]">{p.statut}</span>
           </div>
@@ -75,6 +81,9 @@ export function FichePiece({ donnees }: { donnees: DonneesFiche }) {
           <Info terme="Fournisseur" valeur={p.fournisseur ?? "Non précisé"} />
           <Info terme="Montant TTC" valeur={`${NOMBRE.format(p.montantTtc)} FCFA`} />
           <Info terme="Catégorie" valeur={p.categorie} />
+          {p.montantHt != null && <Info terme="Montant HT" valeur={`${NOMBRE.format(p.montantHt)} FCFA`} />}
+          {p.tva != null && <Info terme="TVA" valeur={`${NOMBRE.format(p.tva)} FCFA`} />}
+          {p.niuTiers && <Info terme="NIU du fournisseur" valeur={p.niuTiers} />}
           <div className="col-span-2 flex flex-col gap-0.5 sm:col-span-4 print:col-span-4">
             <dt className={`text-xs ${GRIS}`}>Reçue dans Marly le</dt>
             <dd className="font-medium">{recue}</dd>
@@ -111,6 +120,12 @@ export function FichePiece({ donnees }: { donnees: DonneesFiche }) {
               </tbody>
             </table>
           </section>
+        )}
+
+        {p.luAuto && (
+          <p className="rounded-lg bg-[#E3F5EC] px-3 py-2 text-xs text-[#11734B]">
+            Montants et date lus automatiquement par Marly sur la photo, puis vérifiés par l&apos;entreprise.
+          </p>
         )}
 
         <p className="rounded-lg bg-[#E6EEF9] px-3 py-2 text-xs text-[#1D4F91]">

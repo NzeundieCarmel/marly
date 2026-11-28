@@ -67,6 +67,21 @@ async function ContenuFiche({ parametres }: { parametres: Promise<{ id: string }
         <Ligne terme="Montant">
           <span className="tabular-nums">{formatMontant(piece.montantTtc)} FCFA</span>
         </Ligne>
+        {piece.numero && (
+          <Ligne terme="Numéro">
+            <span className="tabular-nums">{piece.numero}</span>
+          </Ligne>
+        )}
+        {piece.montantHt != null && (
+          <Ligne terme="Montant HT">
+            <span className="tabular-nums">{formatMontant(piece.montantHt)} FCFA</span>
+          </Ligne>
+        )}
+        {piece.tva != null && (
+          <Ligne terme="TVA">
+            <span className="tabular-nums">{formatMontant(piece.tva)} FCFA</span>
+          </Ligne>
+        )}
         <Ligne terme="Catégorie">{piece.categorie}</Ligne>
         <Ligne terme="Fournisseur">{piece.fournisseur ?? "Non renseigné"}</Ligne>
         <Ligne terme="Statut">

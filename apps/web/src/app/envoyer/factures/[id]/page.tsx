@@ -47,6 +47,11 @@ async function ContenuFacture({ parametres, recherche }: { parametres: Promise<{
         <Pastille ton={s.ton}>{s.texte}</Pastille>
       </div>
 
+      {drapeaux.depuisPhoto === "1" && facture.statut === "BROUILLON" && (
+        <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">
+          Brouillon créé à partir de la photo. Vérifiez le client et les lignes, puis émettez la facture.
+        </p>
+      )}
       {drapeaux.depuisDevis === "1" && facture.statut === "BROUILLON" && (
         <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">
           Brouillon créé à partir du devis. Vérifiez-le, puis émettez la facture.

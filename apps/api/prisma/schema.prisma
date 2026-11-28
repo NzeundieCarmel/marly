@@ -145,7 +145,14 @@ model Piece {
   facture            Facture?        @relation(fields: [factureId], references: [id], onDelete: SetNull)
   factureId          String?         @unique
   creeLe             DateTime        @default(now())
+  // Numero de piece Marly (PIE-2026-0001) et montants lus ou saisis
+  numero             String?
+  montantHt          Int?
+  tva                Int?
+  niuTiers           String?
+  luAuto             Boolean         @default(false)
 
+  @@unique([dossierId, numero])
   @@index([dossierId, date])
 }
 
@@ -726,4 +733,11 @@ model ReglementAchat {
   creeLe    DateTime      @default(now())
 
   @@index([achatId])
+}
+model CompteurPiece {
+  dossierId String
+  annee     Int
+  dernier   Int
+
+  @@id([dossierId, annee])
 }

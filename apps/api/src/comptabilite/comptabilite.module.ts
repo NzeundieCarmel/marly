@@ -5,6 +5,8 @@ import { CaisseController } from '../caisse/caisse.controller';
 import { CaisseService } from '../caisse/caisse.service';
 import { DossiersModule } from '../dossiers/dossiers.module';
 import { FacturationModule } from '../facturation/facturation.module';
+import { LectureController } from '../lecture/lecture.controller';
+import { LectureService } from '../lecture/lecture.service';
 import { PilotageController } from '../pilotage/pilotage.controller';
 import { PilotageService } from '../pilotage/pilotage.service';
 import { StockModule } from '../stock/stock.module';
@@ -22,6 +24,7 @@ import { MemoireComptesService } from './memoire-comptes.service';
     CaisseController,
     AchatsController,
     PilotageController,
+    LectureController,
   ],
   providers: [
     ComptabiliteService,
@@ -30,6 +33,7 @@ import { MemoireComptesService } from './memoire-comptes.service';
     CaisseService,
     AchatsService,
     PilotageService,
+    LectureService,
   ],
   exports: [GrandLivreService],
 })

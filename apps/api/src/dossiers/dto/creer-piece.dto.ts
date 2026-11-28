@@ -1,10 +1,12 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -36,4 +38,34 @@ export class CreerPieceDto {
   @IsString()
   @MaxLength(40)
   demandeId?: string;
+
+  // Facultatifs : lus sur la photo par Marly, ou saisis par le gérant
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Le montant HT doit etre un nombre entier de FCFA' })
+  @Min(0)
+  @Max(2_000_000_000)
+  montantHt?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'La TVA doit etre un nombre entier de FCFA' })
+  @Min(0)
+  @Max(2_000_000_000)
+  tva?: number;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(/\s+/g, '').toUpperCase() : value,
+  )
+  @Matches(/^[A-Z]\d{12}[A-Z]$/, {
+    message:
+      'NIU du fournisseur invalide (une lettre, 12 chiffres, une lettre)',
+  })
+  niuFournisseur?: string;
+
+  // « oui » quand les champs ont ete pre-remplis par la lecture automatique
+  @IsOptional()
+  @IsIn(['oui'])
+  lectureAuto?: string;
 }

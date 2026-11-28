@@ -37,6 +37,11 @@ export interface Piece {
   factureId: string | null;
   empreinte: string | null;
   creeLe: string;
+  numero: string | null;
+  montantHt: number | null;
+  tva: number | null;
+  niuTiers: string | null;
+  luAuto: boolean;
 }
 
 export interface Demande {

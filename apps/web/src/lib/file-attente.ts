@@ -11,6 +11,11 @@ export interface PieceEnAttente {
   montantTtc: string;
   fournisseur: string;
   categorie: string;
+  // Champs lus sur la photo (facultatifs, absents des pièces gardées avant cette version)
+  montantHt?: string;
+  tva?: string;
+  niuFournisseur?: string;
+  lectureAuto?: string;
   fichier: Blob;
   nomFichier: string;
   creeLe: number;
@@ -80,6 +85,10 @@ export async function mettreEnAttente(donnees: FormData): Promise<void> {
     montantTtc: String(donnees.get("montantTtc") ?? ""),
     fournisseur: String(donnees.get("fournisseur") ?? ""),
     categorie: String(donnees.get("categorie") ?? ""),
+    montantHt: String(donnees.get("montantHt") ?? ""),
+    tva: String(donnees.get("tva") ?? ""),
+    niuFournisseur: String(donnees.get("niuFournisseur") ?? ""),
+    lectureAuto: String(donnees.get("lectureAuto") ?? ""),
     fichier,
     nomFichier: fichier.name,
     creeLe: Date.now(),
@@ -94,6 +103,10 @@ function versFormData(piece: PieceEnAttente): FormData {
   donnees.set("montantTtc", piece.montantTtc);
   if (piece.fournisseur) donnees.set("fournisseur", piece.fournisseur);
   donnees.set("categorie", piece.categorie);
+  if (piece.montantHt) donnees.set("montantHt", piece.montantHt);
+  if (piece.tva) donnees.set("tva", piece.tva);
+  if (piece.niuFournisseur) donnees.set("niuFournisseur", piece.niuFournisseur);
+  if (piece.lectureAuto) donnees.set("lectureAuto", piece.lectureAuto);
   donnees.set("fichier", piece.fichier, piece.nomFichier);
   return donnees;
 }

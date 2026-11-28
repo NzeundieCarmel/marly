@@ -37,6 +37,16 @@ function detecterExtension(contenu: Buffer): 'jpg' | 'png' | 'pdf' | null {
   return null;
 }
 
+// Année en cours à l'heure du Cameroun : la numérotation des pièces repart à 1 chaque année
+function anneeDouala(): number {
+  return Number(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Douala',
+      year: 'numeric',
+    }).format(new Date()),
+  );
+}
+
 @Injectable()
 export class PiecesService {
   constructor(
@@ -67,7 +77,18 @@ export class PiecesService {
       throw new BadRequestException('Formats acceptes : JPG, PNG ou PDF');
     }
 
-    // 4. Demande du cabinet à laquelle la pièce répond, si elle est précisée
+    // 4. HT et TVA, s'ils sont donnés tous les deux, doivent redonner le TTC (1 FCFA d'arrondi toléré)
+    if (
+      dto.montantHt !== undefined &&
+      dto.tva !== undefined &&
+      Math.abs(dto.montantHt + dto.tva - dto.montantTtc) > 1
+    ) {
+      throw new BadRequestException(
+        `HT + TVA (${dto.montantHt + dto.tva}) ne correspond pas au TTC (${dto.montantTtc})`,
+      );
+    }
+
+    // 5. Demande du cabinet à laquelle la pièce répond, si elle est précisée
     const demande = dto.demandeId
       ? await this.prisma.demandePiece.findFirst({
           where: { id: dto.demandeId, dossierId },
@@ -80,7 +101,7 @@ export class PiecesService {
       throw new ConflictException('Cette demande est deja close');
     }
 
-    // 5. Doublon : même empreinte déjà présente dans ce dossier
+    // 6. Doublon : même empreinte déjà présente dans ce dossier
     const empreinte = createHash('sha256').update(fichier.buffer).digest('hex');
     const doublon = await this.prisma.piece.findFirst({
       where: { dossierId, empreinte },
@@ -92,7 +113,7 @@ export class PiecesService {
       );
     }
 
-    // 6. Enregistrement du fichier sous un nom aléatoire
+    // 7. Enregistrement du fichier sous un nom aléatoire
     const nomFichier = `${randomUUID()}.${extension}`;
     await mkdir(join(DOSSIER_UPLOADS, dossierId), { recursive: true });
     await writeFile(
@@ -104,20 +125,31 @@ export class PiecesService {
       dossierId,
       date: new Date(dto.date),
       montantTtc: dto.montantTtc,
+      montantHt: dto.montantHt ?? null,
+      tva: dto.tva ?? null,
+      niuTiers: dto.niuFournisseur ?? null,
+      luAuto: dto.lectureAuto === 'oui',
       fournisseur: dto.fournisseur?.trim() || null,
       categorie: dto.categorie.trim(),
       statut: StatutPiece.RECUE,
       fichier: `${dossierId}/${nomFichier}`,
       empreinte,
     };
+    const annee = anneeDouala();
 
-    if (!demande) {
-      return this.prisma.piece.create({ data: donnees });
-    }
-
-    // 7. Tout ou rien : la pièce, la demande satisfaite et l'éventuelle pièce remplacée
+    // 8. Tout ou rien : le numéro PIE, la pièce, la demande satisfaite et l'éventuelle pièce remplacée
     return this.prisma.$transaction(async (tx) => {
-      const piece = await tx.piece.create({ data: donnees });
+      const [{ dernier }] = await tx.$queryRaw<{ dernier: number }[]>`
+        INSERT INTO "CompteurPiece" ("dossierId", "annee", "dernier")
+        VALUES (${dossierId}, ${annee}, 1)
+        ON CONFLICT ("dossierId", "annee")
+        DO UPDATE SET "dernier" = "CompteurPiece"."dernier" + 1
+        RETURNING "dernier"`;
+      const numero = `PIE-${annee}-${String(Number(dernier)).padStart(4, '0')}`;
+      const piece = await tx.piece.create({ data: { ...donnees, numero } });
+      if (!demande) {
+        return piece;
+      }
       await tx.demandePiece.update({
         where: { id: demande.id },
         data: {

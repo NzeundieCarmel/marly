@@ -279,6 +279,76 @@ $comptant = @($script:resultat) | Where-Object { $_.paiement -eq "MTN_MOMO" -and
 Verifier "Paiement fournisseur : achat au comptant refuse" 409 (Appeler Post "$h/$($comptant.id)/reglements" $j @{ date = $ceJour; montant = 100; mode = "ESPECES" })
 Verifier "Isolation : accueil d'une autre entreprise" 404 (Appeler Get $pil $autre.jeton)
 
+# Lecture automatique des photos (OCR) et numero de piece
+Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Net.Http
+
+# Dessine un ticket blanc en noir, comme une photo nette
+function DessinerTicket([string]$chemin, [string[]]$lignes) {
+  $image = New-Object System.Drawing.Bitmap 1100, (120 + 70 * $lignes.Count)
+  $g = [System.Drawing.Graphics]::FromImage($image)
+  $g.Clear([System.Drawing.Color]::White)
+  $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
+  $police = New-Object System.Drawing.Font("Arial", 30)
+  $y = 50
+  foreach ($l in $lignes) { $g.DrawString($l, $police, [System.Drawing.Brushes]::Black, 50, $y); $y += 70 }
+  $g.Dispose()
+  $image.Save($chemin, [System.Drawing.Imaging.ImageFormat]::Png)
+  $image.Dispose()
+}
+
+# Envoie un fichier en multipart, avec d'eventuels champs de formulaire
+function EnvoyerFichier([string]$chemin, [string]$url, [string]$jeton, [hashtable]$champs) {
+  $client = New-Object System.Net.Http.HttpClient
+  $client.Timeout = [TimeSpan]::FromSeconds(240)
+  $client.DefaultRequestHeaders.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", $jeton)
+  $contenu = New-Object System.Net.Http.MultipartFormDataContent
+  if ($champs) { foreach ($cle in $champs.Keys) { $contenu.Add((New-Object System.Net.Http.StringContent([string]$champs[$cle])), $cle) } }
+  $fichier = [System.Net.Http.ByteArrayContent]::new([IO.File]::ReadAllBytes($chemin))
+  $fichier.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("image/png")
+  $contenu.Add($fichier, "fichier", [IO.Path]::GetFileName($chemin))
+  try {
+    $reponse = $client.PostAsync("$base$url", $contenu).Result
+    $texte = $reponse.Content.ReadAsStringAsync().Result
+    $script:resultat = if ($texte) { $texte | ConvertFrom-Json } else { $null }
+    $code = [int]$reponse.StatusCode
+    if ($code -ge 200 -and $code -lt 300) { return "ok" }
+    return $code
+  } catch {
+    $script:resultat = $null
+    return "injoignable"
+  } finally {
+    $client.Dispose()
+  }
+}
+
+$jourDouala = (Get-Date).ToUniversalTime().AddHours(1)
+$jourTexte = $jourDouala.ToString("dd/MM/yyyy")
+$jourIso = $jourDouala.ToString("yyyy-MM-dd")
+$ticketAchat = Join-Path $env:TEMP "marly-ticket-achat.png"
+$ticketVente = Join-Path $env:TEMP "marly-ticket-vente.png"
+$fauxPdf = Join-Path $env:TEMP "marly-faux.pdf"
+DessinerTicket $ticketAchat @("QUINCAILLERIE DU PORT", "Rue Joss, Douala", "Date : $jourTexte", "Ciment 50 kg x 5        20 000", "TOTAL HT                20 000", "TVA 19,25 %              3 850", "TOTAL TTC               23 850", "Merci de votre visite")
+DessinerTicket $ticketVente @("QUINCAILLERIE GRAND LIVRE", "Bon de vente", "Date : $jourTexte", "Client : Chantier Test", "TOTAL TTC             11 925")
+[IO.File]::WriteAllBytes($fauxPdf, [Text.Encoding]::ASCII.GetBytes("%PDF-1.4 faux document"))
+$lec = "/dossiers/$($e.dossier)/lecture"
+
+Verifier "Lecture : photo d'achat lue" "ok" (EnvoyerFichier $ticketAchat $lec $j $null)
+$la = $script:resultat
+Verifier "Lecture : montants TTC/HT/TVA" "23850/20000/3850" "$($la.montantTtc)/$($la.montantHt)/$($la.tva)"
+Verifier "Lecture : date du ticket" $jourIso $la.date
+Verifier "Lecture : achat et fournisseur" "ACHAT/True" "$($la.nature)/$($la.tiers -like '*QUINCAILLERIE DU PORT*')"
+Verifier "Lecture : photo de vente lue" "ok" (EnvoyerFichier $ticketVente $lec $j $null)
+Verifier "Lecture : vente et client reconnus" "VENTE/11925/True" "$($script:resultat.nature)/$($script:resultat.montantTtc)/$($script:resultat.tiers -like '*Chantier*')"
+Verifier "Lecture : PDF refuse" 400 (EnvoyerFichier $fauxPdf $lec $j $null)
+Verifier "Isolation : lecture chez une autre entreprise" 404 (EnvoyerFichier $ticketAchat $lec $autre.jeton $null)
+$pp = "/dossiers/$($e.dossier)/pieces"
+Verifier "Piece : numero PIE et montants lus" "ok" (EnvoyerFichier $ticketAchat $pp $j @{ date = $jourIso; montantTtc = "23850"; montantHt = "20000"; tva = "3850"; fournisseur = "QUINCAILLERIE DU PORT"; categorie = "Achats"; lectureAuto = "oui" })
+Verifier "Piece : PIE-annee-0001, HT, TVA, lue" "PIE-$annee-0001/20000/3850/True" "$($script:resultat.numero)/$($script:resultat.montantHt)/$($script:resultat.tva)/$($script:resultat.luAuto)"
+Verifier "Piece : HT + TVA incoherents refuses" 400 (EnvoyerFichier $ticketVente $pp $j @{ date = $jourIso; montantTtc = "11925"; montantHt = "5000"; tva = "100"; categorie = "Achats" })
+Verifier "Piece : numero suivant" "ok" (EnvoyerFichier $ticketVente $pp $j @{ date = $jourIso; montantTtc = "11925"; categorie = "Autre" })
+Verifier "Piece : PIE-annee-0002" "PIE-$annee-0002" $script:resultat.numero
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }
