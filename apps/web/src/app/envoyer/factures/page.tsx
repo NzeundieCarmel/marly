@@ -13,6 +13,7 @@ import {
 import { formatJour } from "@/lib/calcul-facture";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { Pastille, type Ton } from "@/components/pastille";
+import { EnTeteCompta } from "@/app/envoyer/compta/en-tete";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
@@ -57,7 +58,7 @@ async function ContenuFactures({ recherche }: { recherche: Recherche }) {
 
   return (
     <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="factures">
-      <h1 className="text-[26px] font-bold leading-8 text-heading">Factures</h1>
+      <EnTeteCompta titre="Factures" retour="/envoyer/accueil" />
 
       {aEncaisser > 0 && (
         <section aria-label="À encaisser" className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-4">

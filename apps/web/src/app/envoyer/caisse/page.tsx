@@ -13,6 +13,7 @@ import {
 import { formatMontant } from "@/lib/format";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { OuvrirCaisse, PointDeVente } from "./formulaires";
+import { EnTeteCompta } from "@/app/envoyer/compta/en-tete";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
@@ -51,7 +52,7 @@ async function ContenuCaisse({ recherche }: { recherche: Recherche }) {
     const ecart = nombre(p.ecart);
     return (
       <CadreTelephone nomDossier={dossier.raisonSociale} actif="caisse" large>
-        <h1 className="text-[26px] font-bold leading-8 text-heading">Caisse</h1>
+        <EnTeteCompta titre="Caisse" retour="/envoyer/accueil" />
         {p.cloture === "1" && ecart !== null && (
           <section role="status" className={`flex flex-col gap-1 rounded-2xl p-4 ${ecart === 0 ? "bg-success-bg text-success-ink" : "bg-warning-bg text-warning-ink"}`}>
             <h2 className="text-base font-bold">Caisse clôturée</h2>
@@ -78,7 +79,7 @@ async function ContenuCaisse({ recherche }: { recherche: Recherche }) {
   return (
     <CadreTelephone nomDossier={dossier.raisonSociale} actif="caisse" large>
       <div className="flex flex-col">
-        <h1 className="text-[26px] font-bold leading-8 text-heading">Caisse</h1>
+        <EnTeteCompta titre="Caisse" retour="/envoyer/accueil" />
         <p className="text-sm text-muted tabular-nums">
           Ouverte à {heure(session.ouverteLe)} · fond de caisse {formatMontant(session.fondInitial)} FCFA
         </p>

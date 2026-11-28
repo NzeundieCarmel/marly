@@ -6,6 +6,7 @@ import { lireBalance, lireProfil, listerPieces, type LigneBalance } from "@/lib/
 import { formatMontant } from "@/lib/format";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { BoutonToutComptabiliser } from "./boutons-compta";
+import { EnTeteCompta } from "./en-tete";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
@@ -52,7 +53,7 @@ async function ContenuCompta({ recherche }: { recherche: Recherche }) {
 
   return (
     <CadreTelephone nomDossier={dossier.raisonSociale} actif="compta">
-      <h1 className="text-[26px] font-bold leading-8 text-heading">Comptabilité</h1>
+      <EnTeteCompta titre="Comptabilité" retour="/envoyer/accueil" />
 
       {comptabilisees !== null && (
         <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">

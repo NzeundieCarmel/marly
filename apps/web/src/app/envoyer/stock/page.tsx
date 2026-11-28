@@ -6,6 +6,7 @@ import { formatMontant } from "@/lib/format";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { IconeCaisse, IconeStock } from "@/components/icones";
 import { PastilleStock, Quantite } from "./affichage";
+import { EnTeteCompta } from "@/app/envoyer/compta/en-tete";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
 
@@ -34,7 +35,7 @@ async function ContenuStock({ recherche }: { recherche: Recherche }) {
   return (
     <CadreTelephone nomDossier={dossier.raisonSociale} actif="stock">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-[26px] font-bold leading-8 text-heading">Stock</h1>
+        <EnTeteCompta titre="Stock" retour="/envoyer/accueil" />
         <Link
           href="/envoyer/stock/nouveau"
           className="flex h-11 items-center justify-center rounded-xl bg-action px-4 text-[15px] font-bold text-white hover:bg-action-hover"
