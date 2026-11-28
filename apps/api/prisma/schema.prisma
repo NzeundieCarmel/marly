@@ -116,6 +116,7 @@ model Dossier {
   comptesPerso      CompteDossier[]
   articles          Article[]
   sessionsCaisse    SessionCaisse[]
+  achats            Achat[]
   utilisateurs      Utilisateur[]
   creeLe            DateTime              @default(now())
 }
@@ -407,6 +408,7 @@ enum OrigineEcriture {
   CAISSE
   STOCK
   MANUELLE
+  ACHAT
 }
 
 // Grand livre : chaque ecriture equilibree de l'entreprise, quelle que soit son origine
@@ -585,6 +587,65 @@ model LigneVenteCaisse {
 }
 
 model CompteurTicket {
+  dossierId String
+  annee     Int
+  dernier   Int
+
+  @@id([dossierId, annee])
+}
+enum PaiementAchat {
+  A_CREDIT
+  ESPECES
+  MTN_MOMO
+  ORANGE_MONEY
+  VIREMENT
+}
+
+enum StatutAchat {
+  VALIDE
+  ANNULE
+}
+
+// Un achat de marchandises : il fait entrer le stock et, pour une entreprise autonome, passe au grand livre
+model Achat {
+  id                   String        @id @default(cuid())
+  dossier              Dossier       @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  dossierId            String
+  annee                Int
+  numero               Int
+  date                 DateTime
+  fournisseur          String
+  referenceFournisseur String?
+  avecTva              Boolean
+  totalHt              Int
+  totalTva             Int
+  totalTtc             Int
+  paiement             PaiementAchat
+  statut               StatutAchat   @default(VALIDE)
+  creeParId            String
+  creeLe               DateTime      @default(now())
+  annuleLe             DateTime?
+  lignes               LigneAchat[]
+
+  @@unique([dossierId, annee, numero])
+  @@index([dossierId, date])
+}
+
+model LigneAchat {
+  id           String @id @default(cuid())
+  achat        Achat  @relation(fields: [achatId], references: [id], onDelete: Cascade)
+  achatId      String
+  ordre        Int
+  articleId    String
+  nom          String
+  quantite     Int
+  coutUnitaire Int
+  totalHt      Int
+
+  @@index([achatId])
+}
+
+model CompteurAchat {
   dossierId String
   annee     Int
   dernier   Int

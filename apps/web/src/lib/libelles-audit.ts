@@ -36,6 +36,8 @@ const LIBELLES: Record<string, string> = {
   "POST /dossiers/:dossierId/caisse/session/ouverture": "Caisse ouverte",
   "POST /dossiers/:dossierId/caisse/session/cloture": "Caisse clôturée",
   "POST /dossiers/:dossierId/caisse/ventes": "Vente encaissée",
+  "POST /dossiers/:dossierId/achats": "Achat enregistré",
+  "POST /dossiers/:dossierId/achats/:id/annuler": "Achat annulé",
   "PATCH /dossiers/:dossierId/stock/articles/:id": "Article modifié",
   "POST /dossiers/:dossierId/stock/articles/:id/mouvements": "Mouvement de stock",
   "POST /dossiers/:dossierId/stock/articles/:id/inventaire": "Inventaire d'un article",

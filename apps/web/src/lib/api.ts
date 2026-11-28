@@ -513,7 +513,7 @@ export interface EcritureJournal {
   numero: number;
   date: string;
   libelle: string;
-  origine: "PIECE" | "CAISSE" | "STOCK" | "MANUELLE";
+  origine: "PIECE" | "CAISSE" | "STOCK" | "MANUELLE" | "ACHAT";
   mouvements: { compte: string; intitule: string; libelle: string; tiers: string | null; debit: number; credit: number }[];
 }
 
@@ -673,4 +673,34 @@ export function listerVentesCaisse(dossierId: string): Promise<VenteCaisseResume
 
 export function lireTicket(dossierId: string, id: string): Promise<TicketCaisse> {
   return appelerApi<TicketCaisse>(cheminCaisse(dossierId, `ventes/${encodeURIComponent(id)}`));
+}
+// Achats de marchandises : entrée en stock et écriture au grand livre
+export type PaiementAchat = "A_CREDIT" | "ESPECES" | "MTN_MOMO" | "ORANGE_MONEY" | "VIREMENT";
+
+export interface AchatResume {
+  id: string;
+  numero: number;
+  date: string;
+  fournisseur: string;
+  totalTtc: number;
+  paiement: PaiementAchat;
+  statut: "VALIDE" | "ANNULE";
+}
+
+export interface Achat extends AchatResume {
+  annee: number;
+  referenceFournisseur: string | null;
+  avecTva: boolean;
+  totalHt: number;
+  totalTva: number;
+  annuleLe: string | null;
+  lignes: { articleId: string; nom: string; quantite: number; coutUnitaire: number; totalHt: number }[];
+}
+
+export function listerAchats(dossierId: string): Promise<AchatResume[]> {
+  return appelerApi<AchatResume[]>(`/dossiers/${encodeURIComponent(dossierId)}/achats`);
+}
+
+export function lireAchat(dossierId: string, id: string): Promise<Achat> {
+  return appelerApi<Achat>(`/dossiers/${encodeURIComponent(dossierId)}/achats/${encodeURIComponent(id)}`);
 }

@@ -50,6 +50,12 @@ async function ContenuStock({ recherche }: { recherche: Recherche }) {
         <IconeCaisse width={20} height={20} />
         Caisse : vendre au comptoir
       </Link>
+      <Link
+        href="/envoyer/stock/achats"
+        className="flex h-12 items-center justify-center rounded-xl border border-line-strong bg-surface text-[15px] font-bold text-ink hover:bg-survol"
+      >
+        Achats : recevoir une livraison
+      </Link>
 
       <section aria-label="Résumé du stock" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
         <div className="flex flex-col gap-0.5">

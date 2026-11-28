@@ -204,6 +204,41 @@ Verifier "Facture : avoir" "ok" (Appeler Post "/facturation/factures/$($fa.id)/a
 Appeler Get "$s/articles/$($art.id)" $j | Out-Null
 Verifier "Facture : stock rendu par l'avoir" "$stockAvant/AVOIR" "$($script:resultat.quantite)/$($script:resultat.mouvements[0].origine)"
 
+# Bloc 4b : achats fournisseurs
+$h = "/dossiers/$($e.dossier)/achats"
+$ceJour = (Get-Date).ToUniversalTime().AddHours(1).ToString("yyyy-MM-dd")
+$demain = (Get-Date).ToUniversalTime().AddHours(1).AddDays(3).ToString("yyyy-MM-dd")
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+$avantAchat = $script:resultat
+Verifier "Achat : a credit avec TVA" "ok" (Appeler Post $h $j @{ fournisseur = "CIMENCO"; referenceFournisseur = "F-118"; date = $ceJour; avecTva = $true; paiement = "A_CREDIT"; lignes = @(@{ articleId = $art.id; quantite = 10; coutUnitaire = 4600 }) })
+$achat = $script:resultat
+Verifier "Achat : numero et totaux HT/TVA/TTC" "1/46000/8855/54855" "$($achat.numero)/$($achat.totalHt)/$($achat.totalTva)/$($achat.totalTtc)"
+$valeurAttendue = $avantAchat.valeurStock + 46000
+$quantiteAttendue = $avantAchat.quantite + 10
+$coutAttendu = [Math]::Round($valeurAttendue / $quantiteAttendue, [MidpointRounding]::AwayFromZero)
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Achat : entree en stock au cout moyen pondere" "$quantiteAttendue/$coutAttendu/ACHAT" "$($script:resultat.quantite)/$($script:resultat.coutMoyen)/$($script:resultat.mouvements[0].origine)"
+Appeler Get "$c/journal?journal=AC" $j | Out-Null
+$ea = @(@($script:resultat) | Where-Object { $_.origine -eq "ACHAT" })
+$mv = @($ea[0].mouvements)
+Verifier "Achat : ecriture 601/4452/401 au journal AC" "1/601:46000/4452:8855/401:54855" "$($ea.Count)/$($mv[0].compte):$($mv[0].debit)/$($mv[1].compte):$($mv[1].debit)/$($mv[2].compte):$($mv[2].credit)"
+Verifier "Achat : paye par MTN MoMo" "ok" (Appeler Post $h $j @{ fournisseur = "CIMENCO"; date = $ceJour; avecTva = $false; paiement = "MTN_MOMO"; lignes = @(@{ articleId = $art.id; quantite = 2; coutUnitaire = 4500 }) })
+Verifier "Achat : numero 2, sans TVA" "2/0/9000" "$($script:resultat.numero)/$($script:resultat.totalTva)/$($script:resultat.totalTtc)"
+Verifier "Achat : date future refusee" 400 (Appeler Post $h $j @{ fournisseur = "CIMENCO"; date = $demain; avecTva = $false; paiement = "ESPECES"; lignes = @(@{ articleId = $art.id; quantite = 1; coutUnitaire = 10 }) })
+Verifier "Achat : article sans stock refuse" 400 (Appeler Post $h $j @{ fournisseur = "CIMENCO"; date = $ceJour; avecTva = $false; paiement = "ESPECES"; lignes = @(@{ articleId = $service.id; quantite = 1; coutUnitaire = 10 }) })
+Verifier "Achat : article inconnu refuse" 404 (Appeler Post $h $j @{ fournisseur = "CIMENCO"; date = $ceJour; avecTva = $false; paiement = "ESPECES"; lignes = @(@{ articleId = "inconnu"; quantite = 1; coutUnitaire = 10 }) })
+Appeler Get $h $j | Out-Null
+Verifier "Achat : liste" 2 @($script:resultat).Count
+Verifier "Achat : annulation" "ok" (Appeler Post "$h/$($achat.id)/annuler" $j)
+Appeler Get "$s/articles/$($art.id)" $j | Out-Null
+Verifier "Achat : stock ressorti a l'annulation" "$($quantiteAttendue + 2 - 10)/ACHAT_ANNULE" "$($script:resultat.quantite)/$($script:resultat.mouvements[0].origine)"
+Appeler Get "$c/journal?journal=AC" $j | Out-Null
+$ea = @(@($script:resultat) | Where-Object { $_.origine -eq "ACHAT" })
+Verifier "Achat : ecriture contre-passee" "2" "$($ea.Count)"
+Verifier "Achat : double annulation refusee" 409 (Appeler Post "$h/$($achat.id)/annuler" $j)
+Verifier "Isolation : achat d'une autre entreprise" 404 (Appeler Get "$h/$($achat.id)" $autre.jeton)
+Verifier "Isolation : achat chez une autre entreprise" 404 (Appeler Post $h $autre.jeton @{ fournisseur = "X Y"; date = $ceJour; avecTva = $false; paiement = "ESPECES"; lignes = @(@{ articleId = $art.id; quantite = 1; coutUnitaire = 10 }) })
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }
