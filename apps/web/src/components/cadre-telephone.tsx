@@ -28,7 +28,7 @@ export function CadreTelephone({
   return (
     <div className="mx-auto flex min-h-dvh max-w-[480px] flex-col bg-page text-ink">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-surface px-5 py-3">
-        <Link href="/envoyer" className="flex items-center gap-2.5">
+        <Link href="/envoyer/accueil" aria-label="Accueil" className="flex items-center gap-2.5">
           <Monogramme taille={32} />
           <span className="text-xl font-bold text-heading">Marly</span>
         </Link>

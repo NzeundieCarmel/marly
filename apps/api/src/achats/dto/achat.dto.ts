@@ -65,3 +65,24 @@ export class AchatDto {
   @ArrayMaxSize(50)
   lignes!: LigneAchatDto[];
 }
+export const MODES_REGLEMENT_ACHAT = [
+  'ESPECES',
+  'MTN_MOMO',
+  'ORANGE_MONEY',
+  'VIREMENT',
+] as const;
+
+export class ReglementAchatDto {
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Date attendue au format AAAA-MM-JJ',
+  })
+  date!: string;
+
+  @IsInt({ message: 'Le montant doit être un nombre entier de FCFA' })
+  @Min(1, { message: 'Le montant doit être supérieur à zéro' })
+  @Max(2_000_000_000)
+  montant!: number;
+
+  @IsIn(MODES_REGLEMENT_ACHAT, { message: 'Mode de paiement invalide' })
+  mode!: (typeof MODES_REGLEMENT_ACHAT)[number];
+}

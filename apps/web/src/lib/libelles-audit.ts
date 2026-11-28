@@ -37,6 +37,7 @@ const LIBELLES: Record<string, string> = {
   "POST /dossiers/:dossierId/caisse/session/cloture": "Caisse clôturée",
   "POST /dossiers/:dossierId/caisse/ventes": "Vente encaissée",
   "POST /dossiers/:dossierId/achats": "Achat enregistré",
+  "POST /dossiers/:dossierId/achats/:id/reglements": "Fournisseur payé",
   "POST /facturation/devis": "Devis créé",
   "POST /facturation/devis/:id/facture": "Devis transformé en facture",
   "POST /dossiers/:dossierId/achats/:id/annuler": "Achat annulé",

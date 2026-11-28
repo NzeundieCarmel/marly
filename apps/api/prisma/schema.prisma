@@ -627,7 +627,9 @@ model Achat {
   creeParId            String
   creeLe               DateTime      @default(now())
   annuleLe             DateTime?
+  montantRegle         Int              @default(0)
   lignes               LigneAchat[]
+  reglements           ReglementAchat[]
 
   @@unique([dossierId, annee, numero])
   @@index([dossierId, date])
@@ -711,4 +713,17 @@ model CompteurDevis {
   dernier   Int
 
   @@id([dossierId, annee])
+}
+// Paiement d'un achat fait a credit, en une ou plusieurs fois
+model ReglementAchat {
+  id        String        @id @default(cuid())
+  achat     Achat         @relation(fields: [achatId], references: [id], onDelete: Cascade)
+  achatId   String
+  date      DateTime
+  montant   Int
+  mode      PaiementAchat
+  creeParId String
+  creeLe    DateTime      @default(now())
+
+  @@index([achatId])
 }

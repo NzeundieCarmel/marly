@@ -685,6 +685,7 @@ export interface AchatResume {
   totalTtc: number;
   paiement: PaiementAchat;
   statut: "VALIDE" | "ANNULE";
+  montantRegle: number;
 }
 
 export interface Achat extends AchatResume {
@@ -694,6 +695,8 @@ export interface Achat extends AchatResume {
   totalHt: number;
   totalTva: number;
   annuleLe: string | null;
+  reste: number;
+  reglements: { id: string; date: string; montant: number; mode: PaiementAchat }[];
   lignes: { articleId: string; nom: string; quantite: number; coutUnitaire: number; totalHt: number }[];
 }
 
@@ -743,4 +746,28 @@ export function listerDevis(): Promise<DevisResume[]> {
 
 export function lireDevis(id: string): Promise<DevisDetail> {
   return appelerApi<DevisDetail>(`/facturation/devis/${encodeURIComponent(id)}`);
+}
+// Accueil du gérant : les chiffres du jour et ce qui demande son attention
+export interface Pilotage {
+  autonome: boolean;
+  caisseOuverte: boolean;
+  ventesJour: { caisse: number; tickets: number; factures: number; nombreFactures: number };
+  ventesMois: number;
+  aEncaisser: number;
+  enRetard: number;
+  facturesEnRetard: number;
+  aPayer: number;
+  tresorerie: { caisse: number; banque: number; mobileMoney: number } | null;
+  stock: {
+    valeur: number;
+    ruptures: number;
+    stockBas: number;
+    alertes: { id: string; nom: string; unite: string; quantite: number; seuilAlerte: number; etat: "RUPTURE" | "STOCK_BAS" }[];
+  };
+  piecesAComptabiliser: number;
+  dernieresVentes: { id: string; numero: number; date: string; totalTtc: number; mode: ModeCaisse }[];
+}
+
+export function lirePilotage(dossierId: string): Promise<Pilotage> {
+  return appelerApi<Pilotage>(`/dossiers/${encodeURIComponent(dossierId)}/pilotage`);
 }

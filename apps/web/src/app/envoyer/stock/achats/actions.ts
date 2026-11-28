@@ -88,3 +88,20 @@ export async function annulerAchat(_etat: EtatAchat, donnees: FormData): Promise
   }
   redirect(`/envoyer/stock/achats/${encodeURIComponent(id)}?annule=1`);
 }
+export async function reglerAchat(_etat: EtatAchat, donnees: FormData): Promise<EtatAchat> {
+  const dossierId = String(donnees.get("dossierId") ?? "");
+  const id = String(donnees.get("id") ?? "");
+  const montant = Number(String(donnees.get("montant") ?? "").replace(/[\s  ]/g, ""));
+  if (!Number.isInteger(montant) || montant <= 0) {
+    return { erreur: "Indiquez le montant payé, en FCFA, sans décimales." };
+  }
+  const r = await appeler(`/dossiers/${encodeURIComponent(dossierId)}/achats/${encodeURIComponent(id)}/reglements`, {
+    date: String(donnees.get("date") ?? ""),
+    montant,
+    mode: String(donnees.get("mode") ?? ""),
+  });
+  if (r.statut !== 200) {
+    return { erreur: messageErreur(r) };
+  }
+  redirect(`/envoyer/stock/achats/${encodeURIComponent(id)}?paye=1`);
+}

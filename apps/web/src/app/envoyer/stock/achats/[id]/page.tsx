@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { lireAchat, lireProfil } from "@/lib/api";
 import { formatMontant } from "@/lib/format";
 import { CadreTelephone } from "@/components/cadre-telephone";
 import { EnTeteCompta, formatJourCourt } from "@/app/envoyer/compta/en-tete";
 import { AnnulerAchat } from "../formulaires";
+import { PaiementFournisseur } from "../paiement-fournisseur";
 import { libellePaiement } from "../libelles";
 
 type Recherche = Promise<Record<string, string | string[] | undefined>>;
@@ -15,12 +17,17 @@ async function ContenuAchat({ parametres, recherche }: { parametres: Promise<{ i
     redirect("/dossiers");
   }
   const achat = await lireAchat(profil.dossier.id, id);
+  await connection();
+  const aujourdhui = new Date().toLocaleDateString("sv-SE", { timeZone: "Africa/Douala" });
   const annule = achat.statut === "ANNULE";
 
   return (
     <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
       <EnTeteCompta titre={`Achat n°${achat.numero}`} retour="/envoyer/stock/achats" />
 
+      {p.paye === "1" && (
+        <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">Paiement enregistré.</p>
+      )}
       {p.ok === "1" && (
         <p role="status" className="rounded-xl bg-success-bg p-3 text-sm text-success-ink">
           Achat enregistré : les articles sont entrés en stock.
@@ -82,7 +89,19 @@ async function ContenuAchat({ parametres, recherche }: { parametres: Promise<{ i
         </div>
       </section>
 
-      {!annule && <AnnulerAchat dossierId={profil.dossier.id} id={achat.id} />}
+      {!annule && achat.paiement === "A_CREDIT" && (
+        <PaiementFournisseur
+          dossierId={profil.dossier.id}
+          id={achat.id}
+          reste={achat.reste}
+          montantRegle={achat.montantRegle}
+          reglements={achat.reglements}
+          dateAchat={achat.date.slice(0, 10)}
+          aujourdhui={aujourdhui}
+        />
+      )}
+
+      {!annule && achat.montantRegle === 0 && <AnnulerAchat dossierId={profil.dossier.id} id={achat.id} />}
     </CadreTelephone>
   );
 }

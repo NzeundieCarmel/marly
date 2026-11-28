@@ -10,7 +10,7 @@ import {
 import type { ChargeJeton } from '../auth/auth.service';
 import { UtilisateurCourant } from '../auth/utilisateur-courant.decorator';
 import { AchatsService } from './achats.service';
-import { AchatDto } from './dto/achat.dto';
+import { AchatDto, ReglementAchatDto } from './dto/achat.dto';
 
 @Controller('dossiers/:dossierId/achats')
 export class AchatsController {
@@ -50,5 +50,16 @@ export class AchatsController {
     @UtilisateurCourant() utilisateur: ChargeJeton,
   ) {
     return this.achats.annuler(dossierId, id, utilisateur);
+  }
+
+  @Post(':id/reglements')
+  @HttpCode(HttpStatus.OK)
+  regler(
+    @Param('dossierId') dossierId: string,
+    @Param('id') id: string,
+    @UtilisateurCourant() utilisateur: ChargeJeton,
+    @Body() dto: ReglementAchatDto,
+  ) {
+    return this.achats.regler(dossierId, id, utilisateur, dto);
   }
 }

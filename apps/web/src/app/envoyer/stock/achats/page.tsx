@@ -15,7 +15,7 @@ async function ContenuAchats() {
   const achats = await listerAchats(profil.dossier.id);
   const aPayer = achats
     .filter((a) => a.statut === "VALIDE" && a.paiement === "A_CREDIT")
-    .reduce((s, a) => s + a.totalTtc, 0);
+    .reduce((s, a) => s + a.totalTtc - a.montantRegle, 0);
 
   return (
     <CadreTelephone nomDossier={profil.dossier.raisonSociale} actif="stock">
@@ -29,7 +29,7 @@ async function ContenuAchats() {
 
       {aPayer > 0 && (
         <section className="flex flex-col gap-0.5 rounded-2xl border border-line bg-surface p-4">
-          <span className="text-sm text-muted">Achats à crédit enregistrés</span>
+          <span className="text-sm text-muted">Reste à payer aux fournisseurs</span>
           <strong className="text-[22px] leading-7 text-heading tabular-nums">{formatMontant(aPayer)} FCFA</strong>
         </section>
       )}

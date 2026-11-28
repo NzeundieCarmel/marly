@@ -256,6 +256,29 @@ Verifier "Devis : seconde transformation refusee" 409 (Appeler Post "/facturatio
 Verifier "Devis : modification apres facturation refusee" 409 (Appeler Put "/facturation/devis/$($dv.id)" $j @{ clientId = $client; lignes = $ligneDevis })
 Verifier "Isolation : devis d'une autre entreprise" 404 (Appeler Get "/facturation/devis/$($dv.id)" $autre.jeton)
 
+# Bloc 5 : accueil du gerant et paiement des fournisseurs
+$pil = "/dossiers/$($e.dossier)/pilotage"
+Verifier "Accueil : lecture" "ok" (Appeler Get $pil $j)
+$pl = $script:resultat
+Verifier "Accueil : caisse du jour (total/tickets)" "20000/2" "$($pl.ventesJour.caisse)/$($pl.ventesJour.tickets)"
+Verifier "Accueil : alertes de stock (ruptures/bas)" "1/1" "$($pl.stock.ruptures)/$($pl.stock.stockBas)"
+Verifier "Accueil : entreprise autonome, tresorerie lue" "True/True" "$($pl.autonome)/$($null -ne $pl.tresorerie)"
+Verifier "Paiement fournisseur : achat a credit" "ok" (Appeler Post $h $j @{ fournisseur = "QUINCAM"; date = $ceJour; avecTva = $false; paiement = "A_CREDIT"; lignes = @(@{ articleId = $art.id; quantite = 5; coutUnitaire = 4000 }) })
+$ac = $script:resultat
+Verifier "Paiement fournisseur : acompte MTN MoMo" "15000/5000" (& { Appeler Post "$h/$($ac.id)/reglements" $j @{ date = $ceJour; montant = 15000; mode = "MTN_MOMO" } | Out-Null; "$($script:resultat.montantRegle)/$($script:resultat.reste)" })
+Verifier "Paiement fournisseur : plus que le reste refuse" 400 (Appeler Post "$h/$($ac.id)/reglements" $j @{ date = $ceJour; montant = 6000; mode = "ESPECES" })
+Verifier "Paiement fournisseur : date future refusee" 400 (Appeler Post "$h/$($ac.id)/reglements" $j @{ date = $demain; montant = 100; mode = "ESPECES" })
+Appeler Get "$c/journal?journal=MM" $j | Out-Null
+$p401 = @(@($script:resultat) | ForEach-Object { $_.mouvements } | Where-Object { $_.compte -eq "401" -and $_.debit -eq 15000 })
+Verifier "Paiement fournisseur : 401 au debit, journal MM" 1 $p401.Count
+Appeler Get $pil $j | Out-Null
+Verifier "Accueil : reste a payer aux fournisseurs" 5000 $script:resultat.aPayer
+Verifier "Paiement fournisseur : achat paye en partie non annulable" 409 (Appeler Post "$h/$($ac.id)/annuler" $j)
+Appeler Get $h $j | Out-Null
+$comptant = @($script:resultat) | Where-Object { $_.paiement -eq "MTN_MOMO" -and $_.statut -eq "VALIDE" } | Select-Object -First 1
+Verifier "Paiement fournisseur : achat au comptant refuse" 409 (Appeler Post "$h/$($comptant.id)/reglements" $j @{ date = $ceJour; montant = 100; mode = "ESPECES" })
+Verifier "Isolation : accueil d'une autre entreprise" 404 (Appeler Get $pil $autre.jeton)
+
 $resultats | Format-Table -AutoSize
 $echecs = @($resultats | Where-Object { $_.Resultat -ne "OK" }).Count
 if ($echecs -eq 0) { Write-Host "Tous les tests du sprint 7 sont OK ($($resultats.Count))." -ForegroundColor Green }

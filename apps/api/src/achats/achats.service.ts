@@ -16,7 +16,7 @@ import { GrandLivreService } from '../comptabilite/grand-livre.service';
 import { DossiersService } from '../dossiers/dossiers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockService } from '../stock/stock.service';
-import { AchatDto } from './dto/achat.dto';
+import { AchatDto, ReglementAchatDto } from './dto/achat.dto';
 
 const MONTANT_MAX = 2_000_000_000;
 
@@ -88,6 +88,7 @@ export class AchatsService {
         totalTtc: true,
         paiement: true,
         statut: true,
+        montantRegle: true,
       },
     });
   }
@@ -110,6 +111,11 @@ export class AchatsService {
         paiement: true,
         statut: true,
         annuleLe: true,
+        montantRegle: true,
+        reglements: {
+          orderBy: [{ date: 'asc' }, { creeLe: 'asc' }],
+          select: { id: true, date: true, montant: true, mode: true },
+        },
         lignes: {
           orderBy: { ordre: 'asc' },
           select: {
@@ -125,7 +131,7 @@ export class AchatsService {
     if (!achat) {
       throw new NotFoundException('Achat introuvable');
     }
-    return achat;
+    return { ...achat, reste: achat.totalTtc - achat.montantRegle };
   }
 
   async creer(dossierId: string, utilisateur: ChargeJeton, dto: AchatDto) {
@@ -191,7 +197,6 @@ export class AchatsService {
     }
     const fournisseur = dto.fournisseur.trim();
     const annee = date.getUTCFullYear();
-    const autonome = dossier.cabinet.autonome;
 
     const id = await this.prisma.$transaction(async (tx) => {
       const [{ dernier }] = await tx.$queryRaw<{ dernier: number }[]>`
@@ -231,7 +236,7 @@ export class AchatsService {
           creeParId: utilisateur.sub,
         });
       }
-      if (autonome) {
+      if (dossier.cabinet.autonome) {
         const c = CONTREPARTIE[dto.paiement];
         await this.grandLivre.passer(tx, {
           dossierId,
@@ -272,11 +277,17 @@ export class AchatsService {
         select: {
           numero: true,
           statut: true,
+          montantRegle: true,
           lignes: { select: { articleId: true, nom: true, quantite: true } },
         },
       });
       if (achat.statut === StatutAchat.ANNULE) {
         throw new ConflictException('Cet achat est déjà annulé');
+      }
+      if (achat.montantRegle > 0) {
+        throw new ConflictException(
+          'Cet achat a déjà reçu des paiements : il ne peut plus être annulé',
+        );
       }
       await tx.achat.update({
         where: { id },
@@ -328,6 +339,96 @@ export class AchatsService {
             debit: m.credit,
             credit: m.debit,
           })),
+        });
+      }
+    });
+    return this.detail(dossierId, id, utilisateur);
+  }
+
+  // Paiement, en une ou plusieurs fois, d'un achat fait a credit
+  async regler(
+    dossierId: string,
+    id: string,
+    utilisateur: ChargeJeton,
+    dto: ReglementAchatDto,
+  ) {
+    await this.acces(dossierId, utilisateur, true);
+    await this.detail(dossierId, id, utilisateur);
+    const date = jour(dto.date);
+    if (date > aujourdhui()) {
+      throw new BadRequestException(
+        'La date du paiement ne peut pas être dans le futur',
+      );
+    }
+    const dossier = await this.prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { cabinet: { select: { autonome: true } } },
+    });
+    const autonome = dossier?.cabinet.autonome ?? false;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Achat" WHERE "id" = ${id} FOR UPDATE`;
+      const achat = await tx.achat.findUniqueOrThrow({
+        where: { id },
+        select: {
+          statut: true,
+          paiement: true,
+          date: true,
+          fournisseur: true,
+          totalTtc: true,
+          montantRegle: true,
+        },
+      });
+      if (achat.statut === StatutAchat.ANNULE) {
+        throw new ConflictException('Cet achat est annulé');
+      }
+      if (achat.paiement !== PaiementAchat.A_CREDIT) {
+        throw new ConflictException('Cet achat a été payé au comptant');
+      }
+      if (date < achat.date) {
+        throw new BadRequestException(
+          'Le paiement ne peut pas précéder la date de l\u2019achat',
+        );
+      }
+      const reste = achat.totalTtc - achat.montantRegle;
+      if (dto.montant > reste) {
+        throw new BadRequestException(
+          `Le montant dépasse le reste à payer (${reste} FCFA)`,
+        );
+      }
+      await tx.achat.update({
+        where: { id },
+        data: { montantRegle: { increment: dto.montant } },
+      });
+      const reglement = await tx.reglementAchat.create({
+        data: {
+          achatId: id,
+          date,
+          montant: dto.montant,
+          mode: dto.mode,
+          creeParId: utilisateur.sub,
+        },
+        select: { id: true },
+      });
+      if (autonome) {
+        const c = CONTREPARTIE[dto.mode];
+        await this.grandLivre.passer(tx, {
+          dossierId,
+          journal: c.journal,
+          date,
+          libelle: `Paiement ${achat.fournisseur}`,
+          origine: OrigineEcriture.ACHAT,
+          origineId: `reglement:${reglement.id}`,
+          creeParId: utilisateur.sub,
+          lignes: [
+            {
+              compte: '401',
+              tiers: achat.fournisseur.slice(0, 80),
+              debit: dto.montant,
+              credit: 0,
+            },
+            { compte: c.compte, debit: 0, credit: dto.montant },
+          ],
         });
       }
     });
